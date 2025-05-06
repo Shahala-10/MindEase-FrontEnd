@@ -1,0 +1,29 @@
+.section-container {
+    background-color: #f9f9f9;
+    padding: 20px;
+    margin: 20px auto;
+    width: 80%;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .section-container h2 {
+    color: #007bff;
+    margin-bottom: 10px;
+  }
+  
+  .section-container p {
+    font-size: 16px;
+    color: #333;
+  }
+  
+  .section-container ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .section-container li {
+    font-size: 16px;
+    margin: 5px 0;
+  }
+  

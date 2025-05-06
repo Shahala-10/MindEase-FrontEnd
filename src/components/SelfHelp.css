@@ -1,0 +1,66 @@
+.self-help-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 80vh;
+    padding: 20px;
+    background-color: #1a1a2e;
+    color: #fff;
+  }
+  
+  .self-help-title {
+    font-size: 2rem;
+    color: #e94560;
+    margin-bottom: 10px;
+  }
+  
+  .self-help-subtitle {
+    font-size: 1.2rem;
+    color: #e0e0e0;
+    margin-bottom: 20px;
+  }
+  
+  .resource-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+    max-width: 500px;
+  }
+  
+  .resource-item {
+    background-color: #fff;
+    color: #1a1a2e;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .resource-link {
+    color: #3498db;
+    text-decoration: none;
+    font-size: 1rem;
+  }
+  
+  .resource-link:hover {
+    text-decoration: underline;
+  }
+  
+  .resource-text {
+    font-size: 1rem;
+  }
+  
+  .back-button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #e94560;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+  
+  .back-button:hover {
+    background-color: #d13d54;
+  }

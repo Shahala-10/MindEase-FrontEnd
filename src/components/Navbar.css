@@ -1,0 +1,35 @@
+
+  /* Style for Navbar Links */
+  .navbar a {
+    color: white;
+    margin: 0 12px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 16px;
+    transition: color 0.3s ease-in-out, transform 0.2s ease-in-out;
+  }
+  
+  /* Hover Effect */
+  .navbar a:hover {
+    color: #f0f0f0;
+    transform: scale(1.1); /* Slight zoom effect on hover */
+  }
+  
+  /* Active Link Style */
+  .navbar a.active {
+    color: #ffd700; /* Highlight active link with gold */
+    border-bottom: 2px solid #ffd700;
+    padding-bottom: 2px;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .navbar {
+      flex-direction: column;
+      padding: 10px;
+    }
+    .navbar a {
+      margin: 5px 0;
+    }
+  }
+
