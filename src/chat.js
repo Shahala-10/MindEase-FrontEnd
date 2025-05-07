@@ -7,7 +7,6 @@ import { useInView } from "react-intersection-observer";
 import axios from "axios";
 import "./Chat.css";
 import { FaPaperPlane, FaTrash, FaMicrophone, FaCamera, FaVolumeUp, FaPause, FaBars, FaUser, FaHistory, FaBook, FaSignOutAlt, FaSpinner } from "react-icons/fa";
-import Logout from "./components/Logout";
 import SessionManager from "./utils/SessionManager";
 
 // Function to convert WebM to WAV using the Web Audio API
@@ -661,15 +660,14 @@ const Chat = () => {
               <FaBook className="nav-icon" />
               {isSidebarOpen && <span>Self-Help</span>}
             </button>
-            <Logout
-              onLogout={handleLogout}
-              render={(logout) => (
-                <button onClick={logout} className="nav-link logout-btn" aria-label="Logout">
-                  <FaSignOutAlt className="nav-icon" />
-                  {isSidebarOpen && <span>Logout</span>}
-                </button>
-              )}
-            />
+            <button
+              onClick={handleLogout}
+              className="nav-link logout-btn"
+              aria-label="Logout"
+            >
+              <FaSignOutAlt className="nav-icon" />
+              {isSidebarOpen && <span>Logout</span>}
+            </button>
           </div>
         </div>
       </nav>
