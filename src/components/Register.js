@@ -55,15 +55,18 @@ const Signup = () => {
     try {
       const response = await axios.post("http://localhost:5000/register", formData);
       
-      // ✅ FIXED: Extract directly from response.data
+      // Extract access token and user ID from response
       const { access_token, user_id } = response.data.data;
 
+      // Store authentication details in localStorage
       localStorage.setItem("isLoggedIn", "true");
       localStorage.setItem("token", access_token);
       localStorage.setItem("user_id", user_id);
 
       console.log("Registration successful:", response.data);
-      navigate("/chat");
+
+      // Redirect to emergency contacts page with a flag indicating this is from signup
+      navigate("/emergency-contacts", { state: { fromSignup: true } });
 
     } catch (error) {
       console.error("Registration error:", error);

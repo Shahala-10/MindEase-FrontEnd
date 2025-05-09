@@ -15,19 +15,22 @@ import Profile from "./components/Profile";
 import About from "./components/About";
 import SelfHelp from "./components/SelfHelp";
 import MoodHistory from "./components/Moodhistory";
+import EmergencyContacts from "./components/EmergencyContacts"; // Import the EmergencyContacts component
+import ProtectedRoute from "./components/ProtectedRoute"; // Import the ProtectedRoute component
 
 const AppContent = () => {
   const location = useLocation();
   console.log("Current location:", location.pathname); // Debug log
 
-  // Updated paths to match the exact route definitions
+  // Updated paths to include /emergency-contacts where Navbar and Footer should be hidden
   const hideNavbarFooterPaths = [
     "/signup",
     "/forgot-password",
     "/profile",
     "/chat",
-    "/mood-history", // Corrected path
-    "/self-help"     // Consistent with route definition
+    "/mood-history",
+    "/self-help",
+    "/emergency-contacts", // Add emergency contacts to the list
   ];
 
   const hideNavbarFooter = hideNavbarFooterPaths.includes(location.pathname);
@@ -37,6 +40,7 @@ const AppContent = () => {
       {!hideNavbarFooter && <Navbar />}
       <div className={`min-h-screen bg-gray-900 font-sans ${!hideNavbarFooter ? "py-10" : ""}`}>
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<Home />} />
           <Route path="/features" element={<Features />} />
@@ -47,10 +51,15 @@ const AppContent = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/chat" element={<Chat />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/self-help" element={<SelfHelp />} />
-          <Route path="/mood-history" element={<MoodHistory />} />
+          <Route path="/emergency-contacts" element={<EmergencyContacts />} />
+
+          {/* Protected Routes - Require authentication and at least 2 emergency contacts */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/self-help" element={<SelfHelp />} />
+            <Route path="/mood-history" element={<MoodHistory />} />
+          </Route>
         </Routes>
       </div>
       {!hideNavbarFooter && <Footer />}
