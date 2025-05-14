@@ -68,16 +68,19 @@ const MoodHistory = () => {
     fetchMoodHistory();
   }, [navigate]);
 
+  // Extract the text part of mood_label (e.g., "Happy" from "Happy 😊")
   const mapMoodLabel = (label) => {
     if (!label) return "Neutral";
-    switch (label.toLowerCase()) {
-      case "positive":
-        return "Happy";
-      case "negative":
-        return "Sad";
-      default:
-        return "Neutral";
-    }
+    return label.split(" ")[0]; // Take the first word, e.g., "Happy" from "Happy 😊"
+  };
+
+  // Determine the emoji icon based on mood_label
+  const getMoodEmoji = (label) => {
+    if (!label) return <FaMeh />;
+    const moodText = mapMoodLabel(label).toLowerCase();
+    if (moodText === "happy" || moodText === "excited") return <FaSmile />;
+    if (moodText === "sad" || moodText === "angry" || moodText === "stressed" || moodText === "tired") return <FaFrown />;
+    return <FaMeh />;
   };
 
   const handleFilterChange = (mood) => {
@@ -85,7 +88,7 @@ const MoodHistory = () => {
     if (mood === "All") {
       setFilteredMoods(moodHistory);
     } else {
-      const filtered = moodHistory.filter((entry) => mapMoodLabel(entry.bert_label) === mood);
+      const filtered = moodHistory.filter((entry) => mapMoodLabel(entry.mood_label) === mood);
       setFilteredMoods(filtered);
     }
   };
@@ -93,28 +96,56 @@ const MoodHistory = () => {
   const prepareLineChartData = () => {
     const timestamps = filteredMoods.map((entry) => new Date(entry.timestamp).toLocaleString());
     const scores = filteredMoods.map((entry) => entry.bert_score || 0);
-    const moodLabels = filteredMoods.map((entry) => mapMoodLabel(entry.bert_label));
+    const moodLabels = filteredMoods.map((entry) => mapMoodLabel(entry.mood_label).toLowerCase());
+
+    // Define mood colors
+    const moodColors = {
+      happy: "#50E3C2",
+      excited: "#a855f7",
+      sad: "#3b82f6",
+      angry: "#B91C1C",
+      stressed: "#f97316",
+      tired: "#6b7280",
+      neutral: "#F5A623",
+    };
+
+    // Create the main "Mood Score Trend" dataset for the continuous line
+    const trendDataset = {
+      label: "Mood Score Trend",
+      data: scores,
+      fill: true,
+      borderColor: "#9CA3AF", // Gray for the trend line
+      backgroundColor: "rgba(156, 163, 175, 0.2)", // Light gray fill
+      tension: 0.3,
+      pointBackgroundColor: "#9CA3AF",
+      pointBorderColor: "#fff",
+      pointHoverBackgroundColor: "#fff",
+      pointHoverBorderColor: "#9CA3AF",
+      pointRadius: 0, // Hide points for this dataset (we'll show points in mood datasets)
+      pointHoverRadius: 0,
+    };
+
+    // Create a dataset for each mood
+    const moodDatasets = Object.keys(moodColors).map((mood) => ({
+      label: mood.charAt(0).toUpperCase() + mood.slice(1), // Capitalize mood for legend (e.g., "Happy")
+      data: scores.map((score, index) =>
+        moodLabels[index] === mood ? score : null // Only include score if the mood matches
+      ),
+      fill: false,
+      borderColor: moodColors[mood],
+      backgroundColor: moodColors[mood],
+      pointBackgroundColor: moodColors[mood],
+      pointBorderColor: "#fff",
+      pointHoverBackgroundColor: "#fff",
+      pointHoverBorderColor: moodColors[mood],
+      pointRadius: 6,
+      pointHoverRadius: 8,
+      showLine: false, // Don't draw lines for mood datasets, only points
+    }));
 
     return {
       labels: timestamps,
-      datasets: [
-        {
-          label: "Mood Score Trend",
-          data: scores,
-          fill: true,
-          borderColor: "#4A90E2",
-          backgroundColor: "rgba(74, 144, 226, 0.2)",
-          tension: 0.3,
-          pointBackgroundColor: moodLabels.map((mood) =>
-            mood === "Happy" ? "#50E3C2" : mood === "Sad" ? "#FF6B6B" : "#F5A623"
-          ),
-          pointBorderColor: "#fff",
-          pointHoverBackgroundColor: "#fff",
-          pointHoverBorderColor: "#4A90E2",
-          pointRadius: 6,
-          pointHoverRadius: 8,
-        },
-      ],
+      datasets: [trendDataset, ...moodDatasets],
     };
   };
 
@@ -122,7 +153,44 @@ const MoodHistory = () => {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: "top", labels: { font: { size: 14, family: "'Inter', sans-serif" } } },
+      legend: {
+        display: true, // Enable the chart's legend
+        position: "bottom",
+        labels: {
+          font: { family: "'Inter', sans-serif", size: 12 },
+          color: "#333",
+          usePointStyle: true, // Use circular point style for legend items
+          padding: 15,
+          generateLabels: (chart) => {
+            const originalLabels = ChartJS.defaults.plugins.legend.labels.generateLabels(chart);
+            const moodColors = {
+              Happy: "#50E3C2",
+              Excited: "#a855f7",
+              Sad: "#3b82f6",
+              Angry: "#B91C1C",
+              Stressed: "#f97316",
+              Tired: "#6b7280",
+              Neutral: "#F5A623",
+            };
+            return originalLabels.map((label) => {
+              if (label.text === "Mood Score Trend") {
+                return {
+                  ...label,
+                  fillStyle: "#9CA3AF", // Gray for the trend line
+                  strokeStyle: "#9CA3AF",
+                  hidden: false,
+                };
+              }
+              return {
+                ...label,
+                fillStyle: moodColors[label.text] || "#9CA3AF",
+                strokeStyle: moodColors[label.text] || "#9CA3AF",
+                hidden: false,
+              };
+            });
+          },
+        },
+      },
       title: {
         display: true,
         text: "Mood Score Trend Over Time",
@@ -138,10 +206,14 @@ const MoodHistory = () => {
           label: (context) => {
             const label = context.dataset.label || "";
             const value = context.raw || 0;
-            const mood = filteredMoods[context.dataIndex]
-              ? mapMoodLabel(filteredMoods[context.dataIndex].bert_label)
+            const index = context.dataIndex;
+            const mood = filteredMoods[index]
+              ? mapMoodLabel(filteredMoods[index].mood_label)
               : "Neutral";
-            return `${label}: ${value.toFixed(2)} - ${mood}`;
+            if (label === "Mood Score Trend") {
+              return `${label}: ${value.toFixed(2)} - ${mood}`;
+            }
+            return `${mood}: ${value.toFixed(2)}`;
           },
         },
       },
@@ -255,12 +327,10 @@ const MoodHistory = () => {
                           {new Date(entry.timestamp).toLocaleString()}
                         </span>
                         <span
-                          className={`mood-indicator mood-${mapMoodLabel(entry.bert_label).toLowerCase()}`}
+                          className={`mood-indicator mood-${mapMoodLabel(entry.mood_label).toLowerCase()}`}
                         >
-                          {mapMoodLabel(entry.bert_label) === "Happy" && <FaSmile />}
-                          {mapMoodLabel(entry.bert_label) === "Sad" && <FaFrown />}
-                          {mapMoodLabel(entry.bert_label) === "Neutral" && <FaMeh />}
-                          {mapMoodLabel(entry.bert_label)}
+                          {getMoodEmoji(entry.mood_label)}
+                          {mapMoodLabel(entry.mood_label)}
                         </span>
                       </div>
                       <p className="entry-message">{entry.message || "No message provided"}</p>

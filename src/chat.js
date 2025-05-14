@@ -1,3 +1,4 @@
+
 /* global webkitSpeechRecognition */
 import "animate.css";
 import React, { useState, useEffect, useRef } from "react";
@@ -6,7 +7,21 @@ import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import axios from "axios";
 import "./Chat.css";
-import { FaPaperPlane, FaTrash, FaMicrophone, FaCamera, FaVolumeUp, FaPause, FaBars, FaUser, FaHistory, FaBook, FaSignOutAlt, FaSpinner } from "react-icons/fa";
+import {
+  FaPaperPlane,
+  FaTrash,
+  FaMicrophone,
+  FaCamera,
+  FaVolumeUp,
+  FaPause,
+  FaBars,
+  FaUser,
+  FaHistory,
+  FaBook,
+  FaSignOutAlt,
+  FaSpinner,
+  FaRegClock,
+} from "react-icons/fa";
 import SessionManager from "./utils/SessionManager";
 
 // Function to convert WebM to WAV using the Web Audio API
@@ -34,7 +49,7 @@ const convertWebMToWav = (webmBlob) => {
   });
 };
 
-// Helper function to convert AudioBuffer to WAV (simplified version)
+// Helper function to convert AudioBuffer to WAV
 const audioBufferToWav = (buffer) => {
   const numOfChan = buffer.numberOfChannels;
   const length = buffer.length * numOfChan * 2 + 44;
@@ -46,20 +61,32 @@ const audioBufferToWav = (buffer) => {
   const bitsPerSample = 16;
   let offset = 0;
 
-  // Write WAV header
-  writeString(view, offset, "RIFF"); offset += 4;
-  view.setUint32(offset, length - 8, true); offset += 4;
-  writeString(view, offset, "WAVE"); offset += 4;
-  writeString(view, offset, "fmt "); offset += 4;
-  view.setUint32(offset, 16, true); offset += 4;
-  view.setUint16(offset, 1, true); offset += 2; // PCM format
-  view.setUint16(offset, numOfChan, true); offset += 2;
-  view.setUint32(offset, sampleRate, true); offset += 4;
-  view.setUint32(offset, sampleRate * numOfChan * (bitsPerSample / 8), true); offset += 4;
-  view.setUint16(offset, numOfChan * (bitsPerSample / 8), true); offset += 2;
-  view.setUint16(offset, bitsPerSample, true); offset += 2;
-  writeString(view, offset, "data"); offset += 4;
-  view.setUint32(offset, length - offset - 4, true); offset += 4;
+  writeString(view, offset, "RIFF");
+  offset += 4;
+  view.setUint32(offset, length - 8, true);
+  offset += 4;
+  writeString(view, offset, "WAVE");
+  offset += 4;
+  writeString(view, offset, "fmt ");
+  offset += 4;
+  view.setUint32(offset, 16, true);
+  offset += 4;
+  view.setUint16(offset, 1, true);
+  offset += 2; // PCM format
+  view.setUint16(offset, numOfChan, true);
+  offset += 2;
+  view.setUint32(offset, sampleRate, true);
+  offset += 4;
+  view.setUint32(offset, sampleRate * numOfChan * (bitsPerSample / 8), true);
+  offset += 4;
+  view.setUint16(offset, numOfChan * (bitsPerSample / 8), true);
+  offset += 2;
+  view.setUint16(offset, bitsPerSample, true);
+  offset += 2;
+  writeString(view, offset, "data");
+  offset += 4;
+  view.setUint32(offset, length - offset - 4, true);
+  offset += 4;
 
   // Write PCM audio data
   for (let i = 0; i < buffer.length; i++) {
@@ -88,7 +115,13 @@ const chatVariants = {
 const Chat = () => {
   const [messages, setMessages] = useState(() => {
     const savedMessages = localStorage.getItem("chatMessages");
-    return savedMessages ? JSON.parse(savedMessages).map(msg => ({ ...msg, audioBlob: null, timestamp: msg.timestamp || new Date().toISOString() })) : [];
+    return savedMessages
+      ? JSON.parse(savedMessages).map((msg) => ({
+          ...msg,
+          audioBlob: null,
+          timestamp: msg.timestamp || new Date().toISOString(),
+        }))
+      : [];
   });
   const [userName, setUserName] = useState("");
   const [timeGreetingWithName, setTimeGreetingWithName] = useState("");
@@ -101,6 +134,7 @@ const Chat = () => {
   const [recordingStartTime, setRecordingStartTime] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [language, setLanguage] = useState("en-US"); // Language state (English or Malayalam)
 
   const chatBoxRef = useRef(null);
   const recognitionRef = useRef(null);
@@ -119,13 +153,13 @@ const Chat = () => {
     return "Good evening";
   };
 
-  // Format timestamp for individual messages: Only the time, e.g., "14:35"
+  // Format timestamp for individual messages
   const formatTimestamp = (timestamp) => {
     const messageDate = new Date(timestamp);
-    return messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return messageDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
-  // Format date label for group headers: "Today", "Yesterday", or "May 3, 2025"
+  // Format date label for group headers
   const formatDateLabel = (timestamp) => {
     const messageDate = new Date(timestamp);
     const today = new Date();
@@ -141,17 +175,13 @@ const Chat = () => {
       messageDate.getMonth() === yesterday.getMonth() &&
       messageDate.getFullYear() === yesterday.getFullYear();
 
-    if (isToday) {
-      return "Today";
-    } else if (isYesterday) {
-      return "Yesterday";
-    } else {
-      return messageDate.toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-      }); // e.g., "May 3, 2025"
-    }
+    if (isToday) return "Today";
+    if (isYesterday) return "Yesterday";
+    return messageDate.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
   // Group messages by date
@@ -160,12 +190,12 @@ const Chat = () => {
     let currentDate = null;
 
     messages.forEach((msg, index) => {
-      const messageDate = new Date(msg.timestamp).toISOString().split('T')[0]; // e.g., "2025-05-03"
+      const messageDate = new Date(msg.timestamp).toISOString().split("T")[0];
       if (messageDate !== currentDate) {
-        grouped.push({ type: 'date', date: msg.timestamp, id: `date-${messageDate}` });
+        grouped.push({ type: "date", date: msg.timestamp, id: `date-${messageDate}` });
         currentDate = messageDate;
       }
-      grouped.push({ type: 'message', data: msg, id: index });
+      grouped.push({ type: "message", data: msg, id: index });
     });
 
     return grouped;
@@ -183,7 +213,7 @@ const Chat = () => {
         setUserName(fullName);
 
         const timeGreeting = getTimeBasedGreeting();
-        setTimeGreetingWithName(`${timeGreeting}${fullName ? `, ${fullName}` : ''}.`);
+        setTimeGreetingWithName(`${timeGreeting}${fullName ? `, ${fullName}` : ""}.`);
 
         if (accessToken && sessionId) {
           const chatResponse = await axios.get(`http://localhost:5000/get_chats/${sessionId}`, {
@@ -191,17 +221,27 @@ const Chat = () => {
           });
           if (chatResponse.data.data.chats?.length > 0) {
             const backendMessages = chatResponse.data.data.chats
-              .map(chat => [
+              .map((chat) => [
                 { text: chat.message, sender: "user", timestamp: new Date().toISOString() },
                 { text: chat.response || "", sender: "bot", timestamp: new Date().toISOString() },
               ])
               .flat();
-            setMessages(prev => {
+            setMessages((prev) => {
               const mergedMessages = [
                 ...prev,
-                ...backendMessages.filter(bm => !prev.some(pm => pm.text === bm.text)),
+                ...backendMessages.filter((bm) => !prev.some((pm) => pm.text === bm.text)),
               ];
-              localStorage.setItem("chatMessages", JSON.stringify(mergedMessages.map(msg => ({ text: msg.text, sender: msg.sender, imageSrc: msg.imageSrc, timestamp: msg.timestamp }))));
+              localStorage.setItem(
+                "chatMessages",
+                JSON.stringify(
+                  mergedMessages.map((msg) => ({
+                    text: msg.text,
+                    sender: msg.sender,
+                    imageSrc: msg.imageSrc,
+                    timestamp: msg.timestamp,
+                  }))
+                )
+              );
               return mergedMessages;
             });
           }
@@ -236,7 +276,17 @@ const Chat = () => {
   useEffect(() => {
     if (chatBoxRef.current && messages.length > 0) {
       chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
-      localStorage.setItem("chatMessages", JSON.stringify(messages.map(msg => ({ text: msg.text, sender: msg.sender, imageSrc: msg.imageSrc, timestamp: msg.timestamp }))));
+      localStorage.setItem(
+        "chatMessages",
+        JSON.stringify(
+          messages.map((msg) => ({
+            text: msg.text,
+            sender: msg.sender,
+            imageSrc: msg.imageSrc,
+            timestamp: msg.timestamp,
+          }))
+        )
+      );
     }
   }, [messages]);
 
@@ -245,26 +295,41 @@ const Chat = () => {
       recognitionRef.current = new webkitSpeechRecognition();
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = "en-US";
+      recognitionRef.current.lang = language; // Set language dynamically
 
-      recognitionRef.current.onresult = event => {
+      recognitionRef.current.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
         setInput(transcript);
       };
+
+      recognitionRef.current.onerror = (event) => {
+        console.error("Speech recognition error:", event.error);
+        setMessages((prev) => [
+          ...prev,
+          {
+            text: "Error in speech recognition. Please try again.",
+            sender: "bot",
+            moodLabel: "Neutral 🙂",
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+      };
     }
-  }, []);
+  }, [language]);
 
   const startRecording = async () => {
     try {
       const permissionStatus = await navigator.permissions.query({ name: "microphone" });
       if (permissionStatus.state === "denied") {
-        alert("Microphone access is denied. Please enable microphone permissions in your browser settings to record audio.");
+        alert(
+          "Microphone access is denied. Please enable microphone permissions in your browser settings to record audio."
+        );
         return;
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: "audio/webm" });
-      mediaRecorderRef.current.ondataavailable = event => {
+      mediaRecorderRef.current.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
         }
@@ -275,33 +340,43 @@ const Chat = () => {
         setRecordingTime(0);
 
         if (recordingDuration < 1) {
-          console.log("Recording too short:", recordingDuration);
-          setMessages(prev => [
+          setMessages((prev) => [
             ...prev,
-            { text: "Recording too short. Please record for at least 1 second.", sender: "bot", moodLabel: "Neutral 🙂", timestamp: new Date().toISOString() },
+            {
+              text: "Recording too short. Please record for at least 1 second.",
+              sender: "bot",
+              moodLabel: "Neutral 🙂",
+              timestamp: new Date().toISOString(),
+            },
           ]);
           audioChunksRef.current = [];
           return;
         }
 
-        if (audioChunksRef.current.length === 0 || audioChunksRef.current.every(chunk => chunk.size === 0)) {
-          console.log("No audio data recorded");
-          setMessages(prev => [
+        if (audioChunksRef.current.length === 0 || audioChunksRef.current.every((chunk) => chunk.size === 0)) {
+          setMessages((prev) => [
             ...prev,
-            { text: "No audio detected. Please ensure your microphone is working and speak clearly.", sender: "bot", moodLabel: "Neutral 🙂", timestamp: new Date().toISOString() },
+            {
+              text: "No audio detected. Please ensure your microphone is working and speak clearly.",
+              sender: "bot",
+              moodLabel: "Neutral 🙂",
+              timestamp: new Date().toISOString(),
+            },
           ]);
           audioChunksRef.current = [];
           return;
         }
 
         const webmBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        console.log("WebM blob created:", webmBlob, "size:", webmBlob.size, "type:", webmBlob.type);
-
         if (webmBlob.size < 100) {
-          console.log("WebM blob too small:", webmBlob.size);
-          setMessages(prev => [
+          setMessages((prev) => [
             ...prev,
-            { text: "The recorded audio is too small to process. Please record a longer message (at least 1 second) and speak clearly.", sender: "bot", moodLabel: "Neutral 🙂", timestamp: new Date().toISOString() },
+            {
+              text: "The recorded audio is too small to process. Please record a longer message (at least 1 second).",
+              sender: "bot",
+              moodLabel: "Neutral 🙂",
+              timestamp: new Date().toISOString(),
+            },
           ]);
           audioChunksRef.current = [];
           return;
@@ -310,12 +385,16 @@ const Chat = () => {
         let wavBlob;
         try {
           wavBlob = await convertWebMToWav(webmBlob);
-          console.log("WAV blob created:", wavBlob, "size:", wavBlob.size, "type:", wavBlob.type);
         } catch (error) {
           console.error("Error converting WebM to WAV:", error);
-          setMessages(prev => [
+          setMessages((prev) => [
             ...prev,
-            { text: "Failed to process the recorded audio format. Please try recording again or type your message instead.", sender: "bot", moodLabel: "Neutral 🙂", timestamp: new Date().toISOString() },
+            {
+              text: "Failed to process the recorded audio format. Please try recording again or type your message instead.",
+              sender: "bot",
+              moodLabel: "Neutral 🙂",
+              timestamp: new Date().toISOString(),
+            },
           ]);
           audioChunksRef.current = [];
           return;
@@ -325,9 +404,14 @@ const Chat = () => {
         const audio = new Audio(audioUrl);
         audio.onloadedmetadata = () => {
           if (audio.duration < 1) {
-            setMessages(prev => [
+            setMessages((prev) => [
               ...prev,
-              { text: "The recorded audio duration is too short. Please record for at least 1 second and speak clearly.", sender: "bot", moodLabel: "Neutral 🙂", timestamp: new Date().toISOString() },
+              {
+                text: "The recorded audio duration is too short. Please record for at least 1 second and speak clearly.",
+                sender: "bot",
+                moodLabel: "Neutral 🙂",
+                timestamp: new Date().toISOString(),
+              },
             ]);
             URL.revokeObjectURL(audioUrl);
             audioChunksRef.current = [];
@@ -338,11 +422,16 @@ const Chat = () => {
             audioChunksRef.current = [];
             sendMessage(null, wavBlob);
             URL.revokeObjectURL(audioUrl);
-          }).catch(error => {
+          }).catch((error) => {
             console.error("Playback test failed:", error);
-            setMessages(prev => [
+            setMessages((prev) => [
               ...prev,
-              { text: "The recorded audio appears to be silent or corrupted. Please ensure your microphone is working and speak clearly.", sender: "bot", moodLabel: "Neutral 🙂", timestamp: new Date().toISOString() },
+              {
+                text: "The recorded audio appears to be silent or corrupted. Please ensure your microphone is working and speak clearly.",
+                sender: "bot",
+                moodLabel: "Neutral 🙂",
+                timestamp: new Date().toISOString(),
+              },
             ]);
             URL.revokeObjectURL(audioUrl);
             audioChunksRef.current = [];
@@ -352,8 +441,6 @@ const Chat = () => {
       mediaRecorderRef.current.start();
       setRecordingStartTime(Date.now());
       setIsRecording(true);
-      console.log("Recording started");
-
       recordingTimerRef.current = setInterval(() => {
         const duration = Math.floor((Date.now() - recordingStartTime) / 1000);
         setRecordingTime(duration);
@@ -368,7 +455,6 @@ const Chat = () => {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      console.log("Recording stopped");
     }
   };
 
@@ -418,7 +504,13 @@ const Chat = () => {
       } else {
         window.speechSynthesis.cancel();
         const speech = new SpeechSynthesisUtterance(text);
-        speech.lang = "en-US";
+        speech.lang = language; // Set language dynamically
+
+        // Select a voice that supports the chosen language
+        const voices = window.speechSynthesis.getVoices();
+        const voice = voices.find((v) => v.lang === language) || voices[0];
+        speech.voice = voice;
+
         adjustTTSForEmotion(speech, moodLabel);
         speech.onend = () => {
           setCurrentTTSMessageIndex(null);
@@ -455,9 +547,19 @@ const Chat = () => {
       };
     }
 
-    setMessages(prev => {
+    setMessages((prev) => {
       const newMessages = [...prev, userMessage];
-      localStorage.setItem("chatMessages", JSON.stringify(newMessages.map(msg => ({ text: msg.text, sender: msg.sender, imageSrc: msg.imageSrc, timestamp: msg.timestamp }))));
+      localStorage.setItem(
+        "chatMessages",
+        JSON.stringify(
+          newMessages.map((msg) => ({
+            text: msg.text,
+            sender: msg.sender,
+            imageSrc: msg.imageSrc,
+            timestamp: msg.timestamp,
+          }))
+        )
+      );
       return newMessages;
     });
     setInput("");
@@ -475,6 +577,7 @@ const Chat = () => {
         const formData = new FormData();
         formData.append("session_id", sessionId);
         formData.append("audio", audioBlob, "recording.wav");
+        formData.append("language", language); // Send language to backend
         formData.append("conversation_history", JSON.stringify([]));
 
         const response = await axios.post("http://localhost:5000/analyze", formData, {
@@ -482,7 +585,7 @@ const Chat = () => {
         });
 
         const transcribedText = response.data.data.message;
-        setMessages(prev => {
+        setMessages((prev) => {
           const updatedMessages = [...prev];
           const lastMessageIndex = updatedMessages.length - 1;
           if (updatedMessages[lastMessageIndex].isAudio) {
@@ -493,7 +596,17 @@ const Chat = () => {
               updatedMessages[lastMessageIndex].text = `Voice message: ${transcribedText}`;
             }
           }
-          localStorage.setItem("chatMessages", JSON.stringify(updatedMessages.map(msg => ({ text: msg.text, sender: msg.sender, imageSrc: msg.imageSrc, timestamp: msg.timestamp }))));
+          localStorage.setItem(
+            "chatMessages",
+            JSON.stringify(
+              updatedMessages.map((msg) => ({
+                text: msg.text,
+                sender: msg.sender,
+                imageSrc: msg.imageSrc,
+                timestamp: msg.timestamp,
+              }))
+            )
+          );
           return updatedMessages;
         });
 
@@ -513,29 +626,31 @@ const Chat = () => {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
         recentMessages = [
-          ...historyResponse.data.data.chats.map(chat => [
-            { role: "user", content: chat.message },
-            { role: "assistant", content: chat.response || "" },
-          ]).flat(),
+          ...historyResponse.data.data.chats
+            .map((chat) => [
+              { role: "user", content: chat.message },
+              { role: "assistant", content: chat.response || "" },
+            ])
+            .flat(),
           ...messages
-            .filter(msg => !msg.audioBlob && !msg.imageSrc)
-            .map(msg => ({ role: msg.sender === "user" ? "user" : "assistant", content: msg.text })),
+            .filter((msg) => !msg.audioBlob && !msg.imageSrc)
+            .map((msg) => ({ role: msg.sender === "user" ? "user" : "assistant", content: msg.text })),
         ].slice(-10);
         recentMessages.push({ role: "user", content: text });
 
         const response = await axios.post(
           "http://localhost:5000/analyze",
-          { session_id: sessionId, message: text, conversation_history: recentMessages },
+          { session_id: sessionId, message: text, conversation_history: recentMessages, language },
           { headers: { Authorization: `Bearer ${accessToken}` } }
         );
 
         botResponseText = response.data.data.response;
         moodLabel = response.data.data.mood_label;
 
-        const selfHelp = response.data.data.self_help;
-        if (selfHelp?.length > 0 && selfHelp[0].title !== "No resources available at the moment.") {
-          botResponseText += `\n\nWould you like to explore self-help resources for ${moodLabel}? Click the 'Self-Help' button above!`;
-        }
+       const selfHelp = response.data.data.self_help;
+        //if (selfHelp?.length > 0 && selfHelp[0].title !== "No resources available at the moment.") {
+         // botResponseText += `\n\nWould you like to explore self-help resources for ${moodLabel}? Click the 'Self-Help' button above!`;
+       // }
 
         localStorage.setItem("latestMood", moodLabel);
         localStorage.setItem("selfHelpResource", JSON.stringify(selfHelp));
@@ -546,9 +661,19 @@ const Chat = () => {
       }
 
       const botResponse = { text: botResponseText, sender: "bot", moodLabel, timestamp: new Date().toISOString() };
-      setMessages(prev => {
+      setMessages((prev) => {
         const newMessages = [...prev, botResponse];
-        localStorage.setItem("chatMessages", JSON.stringify(newMessages.map(msg => ({ text: msg.text, sender: msg.sender, imageSrc: msg.imageSrc, timestamp: msg.timestamp }))));
+        localStorage.setItem(
+          "chatMessages",
+          JSON.stringify(
+            newMessages.map((msg) => ({
+              text: msg.text,
+              sender: msg.sender,
+              imageSrc: msg.imageSrc,
+              timestamp: msg.timestamp,
+            }))
+          )
+        );
         const newMessageIndex = newMessages.length - 1;
         speak(botResponseText, newMessageIndex, moodLabel);
         return newMessages;
@@ -556,11 +681,27 @@ const Chat = () => {
       setIsTyping(false);
     } catch (error) {
       console.error("Error sending message to /analyze:", error);
-      const errorMessage = "I’m sorry, something went wrong while communicating with the server. I’m still here for you—let’s try again. What’s on your mind?";
-      const botResponse = { text: errorMessage, sender: "bot", moodLabel: "Neutral 🙂", timestamp: new Date().toISOString() };
-      setMessages(prev => {
+      const errorMessage =
+        "I’m sorry, something went wrong while communicating with the server. I’m still here for you—let’s try again. What’s on your mind?";
+      const botResponse = {
+        text: errorMessage,
+        sender: "bot",
+        moodLabel: "Neutral 🙂",
+        timestamp: new Date().toISOString(),
+      };
+      setMessages((prev) => {
         const newMessages = [...prev, botResponse];
-        localStorage.setItem("chatMessages", JSON.stringify(newMessages.map(msg => ({ text: msg.text, sender: msg.sender, imageSrc: msg.imageSrc, timestamp: msg.timestamp }))));
+        localStorage.setItem(
+          "chatMessages",
+          JSON.stringify(
+            newMessages.map((msg) => ({
+              text: msg.text,
+              sender: msg.sender,
+              imageSrc: msg.imageSrc,
+              timestamp: msg.timestamp,
+            }))
+          )
+        );
         const newMessageIndex = newMessages.length - 1;
         speak(errorMessage, newMessageIndex, "Neutral 🙂");
         return newMessages;
@@ -573,7 +714,7 @@ const Chat = () => {
 
   const handleClearChat = async () => {
     const timeGreeting = getTimeBasedGreeting();
-    setTimeGreetingWithName(`${timeGreeting}${userName ? `, ${userName}` : ''}.`);
+    setTimeGreetingWithName(`${timeGreeting}${userName ? `, ${userName}` : ""}.`);
     setMessages([]);
     localStorage.removeItem("chatMessages");
     window.speechSynthesis.cancel();
@@ -592,7 +733,7 @@ const Chat = () => {
     }
   };
 
-  const handleInputChange = e => {
+  const handleInputChange = (e) => {
     setInput(e.target.value);
     setIsTyping(e.target.value.trim().length > 0);
   };
@@ -615,21 +756,32 @@ const Chat = () => {
   };
 
   const toggleSidebar = () => {
-    setIsSidebarOpen(prev => !prev);
+    setIsSidebarOpen((prev) => !prev);
   };
 
   const formatRecordingTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  };
+
+  const handleLanguageChange = (e) => {
+    setLanguage(e.target.value);
+    window.speechSynthesis.cancel(); // Reset speech synthesis
+    setCurrentTTSMessageIndex(null);
+    setIsTTSPaused(false);
   };
 
   return (
     <div className="chat-container">
-      <nav className={`navbar ${isSidebarOpen ? 'open' : 'closed'}`}>
+      <nav className={`navbar ${isSidebarOpen ? "open" : "closed"}`}>
         <div className="navbar-content">
           <div className="navbar-header">
-            <button onClick={toggleSidebar} className="toggle-btn" aria-label={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}>
+            <button
+              onClick={toggleSidebar}
+              className="toggle-btn"
+              aria-label={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+            >
               <FaBars />
             </button>
             {isSidebarOpen && <h1 className="navbar-title">MindEase</h1>}
@@ -650,6 +802,14 @@ const Chat = () => {
             >
               <FaHistory className="nav-icon" />
               {isSidebarOpen && <span>Mood History</span>}
+            </button>
+            <button
+              onClick={() => navigate("/chat-history")}
+              className="nav-link chat-history-btn"
+              aria-label="Chat History"
+            >
+              <FaRegClock className="nav-icon" />
+              {isSidebarOpen && <span>Chat History</span>}
             </button>
             <button
               onClick={handleNavigateToSelfHelp}
@@ -673,9 +833,21 @@ const Chat = () => {
       </nav>
 
       <section ref={chatRef} className="chat-section">
-        <motion.div initial="hidden" animate={chatInView ? "visible" : "hidden"} variants={chatVariants} className="chat-card">
+        <motion.div
+          initial="hidden"
+          animate={chatInView ? "visible" : "hidden"}
+          variants={chatVariants}
+          className="chat-card"
+        >
           <h4 className="chat-greeting">{timeGreetingWithName}</h4>
           <p className="chat-help-text">How can I help you today?</p>
+          <div className="language-selector">
+            <label htmlFor="language-select">Select Language:</label>
+            <select id="language-select" value={language} onChange={handleLanguageChange}>
+              <option value="en-US">English</option>
+              <option value="ml-IN">Malayalam</option>
+            </select>
+          </div>
           {isLoading && (
             <div className="loading-spinner">
               <FaSpinner className="spinner-icon" />
@@ -683,7 +855,7 @@ const Chat = () => {
           )}
           <div className="chat-box" ref={chatBoxRef}>
             {groupMessagesByDate().map((item) => {
-              if (item.type === 'date') {
+              if (item.type === "date") {
                 return (
                   <div key={item.id} className="date-label">
                     {formatDateLabel(item.date)}
@@ -700,18 +872,20 @@ const Chat = () => {
                     }`}
                   >
                     <div className="message-wrapper">
-                      <div className={`avatar ${msg.sender}-avatar`}>
-                        {msg.sender === "user" ? "👤" : "🤖"}
-                      </div>
+                      <div className={`avatar ${msg.sender}-avatar`}>{msg.sender === "user" ? "👤" : "🤖"}</div>
                       <div className="message-content">
                         <div className="message-text">{msg.text}</div>
                         <span className="message-timestamp">{formatTimestamp(msg.timestamp)}</span>
                         {msg.sender === "bot" && (
                           <button
-                            onClick={() => speak(msg.text, index, msg.moodLabel || localStorage.getItem("latestMood") || "Neutral 🙂")}
+                            onClick={() =>
+                              speak(msg.text, index, msg.moodLabel || localStorage.getItem("latestMood") || "Neutral 🙂")
+                            }
                             className="speak-btn"
                             title={currentTTSMessageIndex === index && !isTTSPaused ? "Pause" : "Play"}
-                            aria-label={currentTTSMessageIndex === index && !isTTSPaused ? "Pause speech" : "Play speech"}
+                            aria-label={
+                              currentTTSMessageIndex === index && !isTTSPaused ? "Pause speech" : "Play speech"
+                            }
                           >
                             {currentTTSMessageIndex === index && !isTTSPaused ? <FaPause /> : <FaVolumeUp />}
                           </button>
@@ -749,12 +923,16 @@ const Chat = () => {
                   onChange={handleInputChange}
                   placeholder="Type a message..."
                   className="message-input"
-                  onKeyDown={e => e.key === "Enter" && sendMessage(input)}
+                  onKeyDown={(e) => e.key === "Enter" && sendMessage(input)}
                   aria-label="Message input"
                 />
                 {!isTyping && (
                   <>
-                    <button onClick={() => alert("Open Camera")} className="input-action-btn camera-btn" aria-label="Open camera">
+                    <button
+                      onClick={() => alert("Open Camera")}
+                      className="input-action-btn camera-btn"
+                      aria-label="Open camera"
+                    >
                       <FaCamera />
                     </button>
                     <button

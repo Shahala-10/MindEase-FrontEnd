@@ -15,14 +15,15 @@ import Profile from "./components/Profile";
 import About from "./components/About";
 import SelfHelp from "./components/SelfHelp";
 import MoodHistory from "./components/Moodhistory";
-import EmergencyContacts from "./components/EmergencyContacts"; // Import the EmergencyContacts component
-import ProtectedRoute from "./components/ProtectedRoute"; // Import the ProtectedRoute component
+import EmergencyContacts from "./components/EmergencyContacts";
+import ChatHistory from "./components/ChatHistory"; // Import the ChatHistory component
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const AppContent = () => {
   const location = useLocation();
   console.log("Current location:", location.pathname); // Debug log
 
-  // Updated paths to include /emergency-contacts where Navbar and Footer should be hidden
+  // Updated paths to include /chat-history where Navbar and Footer should be hidden
   const hideNavbarFooterPaths = [
     "/signup",
     "/forgot-password",
@@ -30,7 +31,8 @@ const AppContent = () => {
     "/chat",
     "/mood-history",
     "/self-help",
-    "/emergency-contacts", // Add emergency contacts to the list
+    "/emergency-contacts",
+    "/chat-history", // Add chat-history to the list
   ];
 
   const hideNavbarFooter = hideNavbarFooterPaths.includes(location.pathname);
@@ -59,6 +61,7 @@ const AppContent = () => {
             <Route path="/profile" element={<Profile />} />
             <Route path="/self-help" element={<SelfHelp />} />
             <Route path="/mood-history" element={<MoodHistory />} />
+            <Route path="/chat-history" element={<ChatHistory />} /> {/* New protected route */}
           </Route>
         </Routes>
       </div>

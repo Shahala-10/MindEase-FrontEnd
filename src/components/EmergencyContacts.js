@@ -14,11 +14,11 @@ const EmergencyContacts = () => {
   const [editContact, setEditContact] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [alerts, setAlerts] = useState([]); // State for emergency alerts
-  const [isLoading, setIsLoading] = useState(false); // Loading state for API calls
+  const [alerts, setAlerts] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const fromSignup = location.state?.fromSignup || false; // Check if coming from signup
+  const fromSignup = location.state?.fromSignup || false;
 
   const fetchContacts = useCallback(async () => {
     setIsLoading(true);
@@ -28,7 +28,6 @@ const EmergencyContacts = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       setContacts(response.data.data.contacts);
-      // If coming from signup and has at least 2 contacts, redirect to chat
       if (fromSignup && response.data.data.contacts.length >= 2) {
         navigate('/chat');
       }
@@ -54,12 +53,10 @@ const EmergencyContacts = () => {
   useEffect(() => {
     fetchContacts();
     fetchAlerts();
-    // Poll for alerts every 30 seconds
     const interval = setInterval(fetchAlerts, 30000);
     return () => clearInterval(interval);
   }, [fetchContacts, fetchAlerts]);
 
-  // Prevent navigation away if coming from signup and less than 2 contacts
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (fromSignup && contacts.length < 2) {
@@ -172,7 +169,7 @@ const EmergencyContacts = () => {
         )}
         {alerts.length > 0 && (
           <div className="bg-red-600 text-white p-3 rounded-lg mb-4">
-            <p>🚨 An alert has been sent to your emergency contacts due to your recent mood. They have been notified to support you.</p>
+            <p>🚨 An alert has been sent to your emergency contacts due to a distress signal in your message. They have been notified to support you.</p>
             <ul className="mt-2">
               {alerts.slice(0, 3).map((alert) => (
                 <li key={alert.id} className="text-sm">
@@ -254,7 +251,6 @@ const EmergencyContacts = () => {
           )}
         </div>
 
-        {/* Show navigation button only if not coming from signup or has at least 2 contacts */}
         {(!fromSignup || contacts.length >= 2) && (
           <button
             onClick={() => navigate('/chat')}

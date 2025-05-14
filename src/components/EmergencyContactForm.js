@@ -48,7 +48,7 @@ const EmergencyContactForm = ({ contactNumber, formData, handleChange, prefix })
         transition={{ duration: 0.3, delay: 0.2 }}
       >
         <label htmlFor={`${prefix}Email`} className="block text-gray-200 font-medium mb-2">
-          Email (Optional)
+          Email
         </label>
         <input
           type="email"
@@ -58,6 +58,7 @@ const EmergencyContactForm = ({ contactNumber, formData, handleChange, prefix })
           onChange={handleChange}
           className="w-full p-3 rounded-lg bg-gray-600/50 text-white border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200 placeholder-gray-400"
           placeholder="Enter email (e.g., john@example.com)"
+          required
         />
       </motion.div>
       <motion.div
@@ -78,7 +79,7 @@ const EmergencyContactForm = ({ contactNumber, formData, handleChange, prefix })
         >
           <option value="Family">Family</option>
           <option value="Friend">Friend</option>
-          <option value="Caregiver">Caregiver</option>
+          <option value="Guardian">Guardian</option>
           <option value="Other">Other</option>
         </select>
       </motion.div>
