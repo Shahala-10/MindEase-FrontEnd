@@ -1,0 +1,95 @@
+.word-scramble-game {
+  text-align: center;
+  padding: 20px;
+  color: white;
+  min-height: 100vh;
+  background-color: #1f2937;
+}
+
+.back-to-mini-games-btn {
+  display: inline-block;
+  margin-bottom: 20px;
+  padding: 10px 20px;
+  background: linear-gradient(90deg, #ff6b6b, #f06595);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.3s ease;
+}
+
+.back-to-mini-games-btn:hover {
+  transform: scale(1.05);
+  background: linear-gradient(90deg, #f06595, #ff6b6b);
+}
+
+.back-to-mini-games-btn:focus {
+  outline: 2px solid #f06595;
+  outline-offset: 2px;
+}
+
+.game-area {
+  margin: 20px 0;
+}
+
+.game-area p {
+  margin: 10px 0;
+}
+
+.game-area input {
+  padding: 8px;
+  border: 1px solid #4b5563;
+  border-radius: 5px;
+  background-color: #374151;
+  color: white;
+  font-size: 1rem;
+  margin: 10px 0;
+}
+
+.game-area input::placeholder {
+  color: #9ca3af;
+}
+
+.game-area input:focus {
+  outline: 2px solid #f06595;
+  outline-offset: 2px;
+}
+
+.game-area button {
+  background-color: #ef4444;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin: 10px 0;
+}
+
+.game-area button:hover {
+  background-color: #dc2626;
+}
+
+.game-finished {
+  margin: 20px 0;
+}
+
+.game-finished p {
+  margin: 10px 0;
+}
+
+.game-finished button {
+  background-color: #ef4444;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin: 10px 0;
+}
+
+.game-finished button:hover {
+  background-color: #dc2626;
+}

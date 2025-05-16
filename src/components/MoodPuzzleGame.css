@@ -1,0 +1,106 @@
+.mood-puzzle-game {
+  text-align: center;
+  padding: 20px;
+  color: white;
+  min-height: 100vh;
+  background-color: #1f2937;
+}
+
+.back-to-mini-games-btn {
+  display: inline-block;
+  margin-bottom: 20px;
+  padding: 10px 20px;
+  background: linear-gradient(90deg, #ff6b6b, #f06595);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.3s ease;
+}
+
+.back-to-mini-games-btn:hover {
+  transform: scale(1.05);
+  background: linear-gradient(90deg, #f06595, #ff6b6b);
+}
+
+.back-to-mini-games-btn:focus {
+  outline: 2px solid #f06595;
+  outline-offset: 2px;
+}
+
+.image-selector {
+  margin: 20px 0;
+}
+
+.image-selector button {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  margin: 0 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.image-selector button:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.image-selector button.active {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+.puzzle-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 100px);
+  gap: 2px;
+  justify-content: center;
+  margin: 20px auto;
+  width: 306px;
+  height: 306px;
+}
+
+.puzzle-piece {
+  width: 100px;
+  height: 100px;
+  background-size: 300px 300px;
+  border: 1px solid #4b5563;
+  cursor: pointer;
+}
+
+.puzzle-piece.empty {
+  background: #374151;
+  cursor: default;
+}
+
+.completed {
+  margin-top: 20px;
+}
+
+.completed-image {
+  width: 300px;
+  height: 300px;
+  border-radius: 8px;
+}
+
+.completed button {
+  background-color: #ef4444;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-top: 10px;
+}
+
+.completed button:hover {
+  background-color: #dc2626;
+}
+
+.error {
+  color: #ff6b6b;
+  font-weight: bold;
+}

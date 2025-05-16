@@ -1,0 +1,80 @@
+.color-match-game {
+  text-align: center;
+  padding: 20px;
+  color: white;
+  min-height: 100vh;
+  background-color: #1f2937;
+}
+
+.back-to-mini-games-btn {
+  display: inline-block;
+  margin-bottom: 20px;
+  padding: 10px 20px;
+  background: linear-gradient(90deg, #ff6b6b, #f06595);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.3s ease;
+}
+
+.back-to-mini-games-btn:hover {
+  transform: scale(1.05);
+  background: linear-gradient(90deg, #f06595, #ff6b6b);
+}
+
+.back-to-mini-games-btn:focus {
+  outline: 2px solid #f06595;
+  outline-offset: 2px;
+}
+
+.game-area {
+  margin-top: 20px;
+}
+
+.target-color {
+  width: 100px;
+  height: 100px;
+  margin: 20px auto;
+  border-radius: 8px;
+  border: 2px solid #4b5563;
+}
+
+.options {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.color-option {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  border: 2px solid #4b5563;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.color-option:hover {
+  transform: scale(1.1);
+}
+
+.game-over {
+  margin-top: 20px;
+}
+
+.game-over button {
+  background-color: #ef4444;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.game-over button:hover {
+  background-color: #dc2626;
+}

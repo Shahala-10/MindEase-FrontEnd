@@ -1,6 +1,7 @@
 /* Set the body background to white as requested */
+
 body {
-    background: white; /* Changed from black to white */
+    background: white; 
     margin: 0;
 }
 

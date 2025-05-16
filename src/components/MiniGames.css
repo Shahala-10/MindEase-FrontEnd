@@ -1,0 +1,98 @@
+/* Mini Games Section */
+.mini-games {
+  padding: 20px;
+  text-align: center;
+}
+
+/* Heading */
+.mini-games h3 {
+  margin-bottom: 15px;
+  color: #fbfbfb;
+}
+
+/* Paragraph */
+.mini-games p {
+  margin: 5px 0;
+  color: #faf9f9;
+}
+
+/* Game List */
+.game-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px; /* Space for the button below */
+}
+
+/* Game Item */
+.game-item {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* Game Item Heading */
+.game-item h4 {
+  margin-bottom: 5px;
+  color: #444;
+}
+
+/* Game Item Description */
+.game-item p {
+  margin: 5px 0;
+  color: #666;
+}
+
+/* Game Meta */
+.game-meta {
+  font-size: 0.9rem;
+  color: #777;
+}
+
+/* Play Button */
+.play-btn {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.play-btn:hover {
+  background: #0056b3;
+}
+
+/* Error Message */
+.error {
+  color: #dc3545;
+}
+
+/* Back to Chat Button (Positioned Below Game List) */
+.back-to-chat-btn {
+  display: inline-block;
+  margin-top: 20px; /* Space above the button */
+  padding: 10px 20px;
+  background: linear-gradient(90deg, #ff6b6b, #f06595);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.3s ease;
+}
+
+.back-to-chat-btn:hover {
+  transform: scale(1.05);
+  background: linear-gradient(90deg, #f06595, #ff6b6b);
+}
+
+.back-to-chat-btn:focus {
+  outline: 2px solid #f06595;
+  outline-offset: 2px;
+}

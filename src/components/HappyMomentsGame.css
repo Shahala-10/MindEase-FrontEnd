@@ -1,0 +1,72 @@
+.happy-moments-game {
+  text-align: center;
+  padding: 20px;
+  color: white;
+  min-height: 100vh;
+  background-color: #1f2937;
+}
+
+.back-to-mini-games-btn {
+  display: inline-block;
+  margin-bottom: 20px;
+  padding: 10px 20px;
+  background: linear-gradient(90deg, #ff6b6b, #f06595);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.3s ease;
+}
+
+.back-to-mini-games-btn:hover {
+  transform: scale(1.05);
+  background: linear-gradient(90deg, #f06595, #ff6b6b);
+}
+
+.back-to-mini-games-btn:focus {
+  outline: 2px solid #f06595;
+  outline-offset: 2px;
+}
+
+.prompt-area {
+  margin: 20px 0;
+}
+
+.prompt-area textarea {
+  width: 80%;
+  max-width: 500px;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #4b5563;
+  background-color: #374151;
+  color: white;
+  resize: none;
+}
+
+.prompt-area button {
+  background-color: #ef4444;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.3s ease;
+}
+
+.prompt-area button:hover {
+  background-color: #dc2626;
+}
+
+.responses {
+  margin-top: 20px;
+}
+
+.response-entry {
+  background-color: #374151;
+  padding: 10px;
+  border-radius: 5px;
+  margin: 10px auto;
+  max-width: 500px;
+}

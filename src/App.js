@@ -16,14 +16,20 @@ import About from "./components/About";
 import SelfHelp from "./components/SelfHelp";
 import MoodHistory from "./components/Moodhistory";
 import EmergencyContacts from "./components/EmergencyContacts";
-import ChatHistory from "./components/ChatHistory"; // Import the ChatHistory component
+import ChatHistory from "./components/ChatHistory";
+import QuizSection from "./components/QuizSection";
+import MiniGames from "./components/MiniGames";
+import MemoryMatchGame from "./components/MemoryMatchGame"; // Import Memory Match
+import ColorMatchGame from "./components/ColorMatchGame"; // Import Color Match
+import WordScrambleGame from "./components/WordScrambleGame";
+import MoodPuzzleGame from "./components/MoodPuzzleGame";
+import HappyMomentsGame from "./components/HappyMomentsGame";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const AppContent = () => {
   const location = useLocation();
-  console.log("Current location:", location.pathname); // Debug log
+  console.log("Current location:", location.pathname);
 
-  // Updated paths to include /chat-history where Navbar and Footer should be hidden
   const hideNavbarFooterPaths = [
     "/signup",
     "/forgot-password",
@@ -32,7 +38,14 @@ const AppContent = () => {
     "/mood-history",
     "/self-help",
     "/emergency-contacts",
-    "/chat-history", // Add chat-history to the list
+    "/chat-history",
+    "/quizzes",
+    "/mini-games",
+    "/memory-match-game", // Add Memory Match route
+    "/color-match-game", // Add Color Match route
+    "/word-scramble-game",
+    "/mood-puzzle-game",
+    "/happy-moments-game",
   ];
 
   const hideNavbarFooter = hideNavbarFooterPaths.includes(location.pathname);
@@ -61,7 +74,14 @@ const AppContent = () => {
             <Route path="/profile" element={<Profile />} />
             <Route path="/self-help" element={<SelfHelp />} />
             <Route path="/mood-history" element={<MoodHistory />} />
-            <Route path="/chat-history" element={<ChatHistory />} /> {/* New protected route */}
+            <Route path="/chat-history" element={<ChatHistory />} />
+            <Route path="/quizzes" element={<QuizSection />} />
+            <Route path="/mini-games" element={<MiniGames />} />
+            <Route path="/memory-match-game" element={<MemoryMatchGame />} /> {/* Add Memory Match route */}
+            <Route path="/color-match-game" element={<ColorMatchGame />} /> {/* Add Color Match route */}
+            <Route path="/word-scramble-game" element={<WordScrambleGame />} />
+            <Route path="/mood-puzzle-game" element={<MoodPuzzleGame />} />
+            <Route path="/happy-moments-game" element={<HappyMomentsGame />} />
           </Route>
         </Routes>
       </div>

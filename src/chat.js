@@ -5,8 +5,12 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
-import axios from "axios";
+import axios from "axios"; 
+import { FaQuestionCircle } from "react-icons/fa";
+import { BiLineChart } from "react-icons/bi"; 
 import "./Chat.css";
+import { FaGamepad } from "react-icons/fa";
+
 import {
   FaPaperPlane,
   FaTrash,
@@ -20,7 +24,7 @@ import {
   FaBook,
   FaSignOutAlt,
   FaSpinner,
-  FaRegClock,
+
 } from "react-icons/fa";
 import SessionManager from "./utils/SessionManager";
 
@@ -795,22 +799,40 @@ const Chat = () => {
               <FaUser className="nav-icon" />
               {isSidebarOpen && <span>Profile</span>}
             </button>
-            <button
-              onClick={() => navigate("/mood-history")}
-              className="nav-link mood-history-btn"
-              aria-label="Mood History"
-            >
-              <FaHistory className="nav-icon" />
-              {isSidebarOpen && <span>Mood History</span>}
-            </button>
+         <button
+         onClick={() => navigate("/mood-history")}
+         className="nav-link mood-history-btn"
+         aria-label="Mood History"
+        >
+        <BiLineChart className="nav-icon" />  {/* <-- replaced icon here */}
+        {isSidebarOpen && <span>Mood History</span>}
+        </button>
             <button
               onClick={() => navigate("/chat-history")}
               className="nav-link chat-history-btn"
               aria-label="Chat History"
             >
-              <FaRegClock className="nav-icon" />
+              <FaHistory className="nav-icon" />
               {isSidebarOpen && <span>Chat History</span>}
             </button>
+             <button
+             onClick={() => navigate("/quizzes")}
+             className="nav-link quizzes-btn"
+             aria-label="Go to quizzes"
+             >
+            <FaQuestionCircle className="nav-icon" />
+            {isSidebarOpen && <span>Quiz</span>}
+            </button>
+
+             <button
+              onClick={() => navigate("/mini-games")} // Added Mini-Games button
+              className="nav-link mini-games-btn"
+              aria-label="Play Mini-Games"
+            >
+              <FaGamepad className="nav-icon" />
+              {isSidebarOpen && <span>Mini-Games</span>}
+            </button>
+            
             <button
               onClick={handleNavigateToSelfHelp}
               className="nav-link self-help-btn"
