@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
+import axios from "axios";
 
 // Animation variants for the hero section
 const heroVariants = {
@@ -23,6 +24,8 @@ const Contact = () => {
     rating: 0,
   });
   const [feedbackStatus, setFeedbackStatus] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Added loading state
+  const [error, setError] = useState(null); // Added error state
 
   const [heroRef, heroInView] = useInView({ triggerOnce: true, threshold: 0.2 });
   const [infoRef, infoInView] = useInView({ triggerOnce: true, threshold: 0.2 });
@@ -43,14 +46,26 @@ const Contact = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulate form submission (replace with API call in a real app)
-    setTimeout(() => {
-      setFeedbackStatus("Feedback sent successfully!");
-      setFeedbackData({ name: "", email: "", message: "", rating: 0 });
-    }, 1000);
-    console.log("Feedback submitted:", feedbackData);
+    setIsSubmitting(true);
+    setFeedbackStatus(null);
+    setError(null);
+
+    try {
+      const response = await axios.post("http://localhost:5000/submit_feedback", feedbackData);
+      if (response.data.status === "success") {
+        setFeedbackStatus("Feedback sent successfully!");
+        setFeedbackData({ name: "", email: "", message: "", rating: 0 });
+      } else {
+        setError(response.data.message || "Failed to submit feedback");
+      }
+    } catch (err) {
+      console.error("Error submitting feedback:", err);
+      setError("Failed to submit feedback. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -155,6 +170,9 @@ const Contact = () => {
             {feedbackStatus && (
               <p className="text-center text-green-400 mb-4">{feedbackStatus}</p>
             )}
+            {error && (
+              <p className="text-center text-red-400 mb-4">{error}</p>
+            )}
             <div className="mb-4">
               <label htmlFor="feedback-name" className="block text-gray-300 mb-2">
                 Name
@@ -168,6 +186,7 @@ const Contact = () => {
                 className="w-full p-3 rounded-lg bg-gray-600 text-white border border-gray-500 focus:outline-none focus:border-green-400"
                 placeholder="Your Name"
                 required
+                disabled={isSubmitting}
               />
             </div>
             <div className="mb-4">
@@ -183,6 +202,7 @@ const Contact = () => {
                 className="w-full p-3 rounded-lg bg-gray-600 text-white border border-gray-500 focus:outline-none focus:border-green-400"
                 placeholder="Your Email"
                 required
+                disabled={isSubmitting}
               />
             </div>
             <div className="mb-4">
@@ -198,6 +218,7 @@ const Contact = () => {
                 rows="5"
                 placeholder="Share your thoughts or suggestions..."
                 required
+                disabled={isSubmitting}
               />
             </div>
             <div className="mb-4">
@@ -208,8 +229,8 @@ const Contact = () => {
                 {[1, 2, 3, 4, 5].map((star) => (
                   <span
                     key={star}
-                    onClick={() => handleRatingChange(star)}
-                    className={`cursor-pointer text-2xl ${star <= feedbackData.rating ? "text-yellow-400" : "text-gray-500"}`}
+                    onClick={() => !isSubmitting && handleRatingChange(star)}
+                    className={`cursor-pointer text-2xl ${star <= feedbackData.rating ? "text-yellow-400" : "text-gray-500"} ${isSubmitting ? "cursor-not-allowed" : ""}`}
                   >
                     ★
                   </span>
@@ -218,9 +239,10 @@ const Contact = () => {
             </div>
             <button
               type="submit"
-              className="w-full bg-green-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-green-600 transition duration-300"
+              className={`w-full bg-green-500 text-white px-6 py-3 rounded-xl font-semibold transition duration-300 ${isSubmitting ? "opacity-50 cursor-not-allowed" : "hover:bg-green-600"}`}
+              disabled={isSubmitting}
             >
-              Submit Feedback
+              {isSubmitting ? "Submitting..." : "Submit Feedback"}
             </button>
           </motion.form>
         </div>

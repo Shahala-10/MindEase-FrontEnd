@@ -345,11 +345,14 @@ div.chat-container {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #64748b;
+  color: white; /* Updated to match user message text color */
   font-style: italic;
   font-size: 0.9rem;
-  align-self: flex-start;
+  align-self: flex-end; /* Changed to align right */
   padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #34d399, #10b981); /* Match user message background */
+  border-radius: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .typing-dots {
@@ -360,7 +363,7 @@ div.chat-container {
 .typing-dots span {
   width: 8px;
   height: 8px;
-  background: #10b981;
+  background: #ffffff; /* Updated to contrast with new background */
   border-radius: 50%;
   animation: typing 1.2s infinite;
 }

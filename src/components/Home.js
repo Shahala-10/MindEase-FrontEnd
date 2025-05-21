@@ -66,10 +66,10 @@ const Home = () => {
           variants={heroVariants}
         >
           <motion.h1
-            className="text-5xl font-bold mb-4 leading-tight"
+            className="text-5xl font-bold mb-4 leading-tight text-white"
             variants={heroVariants}
-          >
-            AI-Powered Mental Health Companion
+        >
+           AI-Powered Mental Health Companion
           </motion.h1>
           <motion.p
             className="text-lg mb-6 text-gray-300"

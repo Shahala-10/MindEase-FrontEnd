@@ -1,4 +1,3 @@
-
 /* global webkitSpeechRecognition */
 import "animate.css";
 import React, { useState, useEffect, useRef } from "react";
