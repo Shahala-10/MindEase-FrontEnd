@@ -4,12 +4,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
-import axios from "axios"; 
-import { FaQuestionCircle } from "react-icons/fa";
-import { BiLineChart } from "react-icons/bi"; 
-import "./Chat.css";
-import { FaGamepad } from "react-icons/fa";
-
+import axios from "axios";
+import Webcam from "react-webcam";
 import {
   FaPaperPlane,
   FaTrash,
@@ -23,22 +19,22 @@ import {
   FaBook,
   FaSignOutAlt,
   FaSpinner,
-
+  FaQuestionCircle,
+  FaGamepad,
 } from "react-icons/fa";
+import { BiLineChart } from "react-icons/bi";
+import "./Chat.css";
 import SessionManager from "./utils/SessionManager";
 
-// Function to convert WebM to WAV using the Web Audio API
+// WebM to WAV conversion functions (unchanged)
 const convertWebMToWav = (webmBlob) => {
   return new Promise((resolve, reject) => {
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const fileReader = new FileReader();
-
     fileReader.onload = async (event) => {
       try {
         const arrayBuffer = event.target.result;
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-
-        // Create a WAV file
         const wavBuffer = audioBufferToWav(audioBuffer);
         const wavBlob = new Blob([wavBuffer], { type: "audio/wav" });
         resolve(wavBlob);
@@ -46,20 +42,16 @@ const convertWebMToWav = (webmBlob) => {
         reject(error);
       }
     };
-
     fileReader.onerror = (error) => reject(error);
     fileReader.readAsArrayBuffer(webmBlob);
   });
 };
 
-// Helper function to convert AudioBuffer to WAV
 const audioBufferToWav = (buffer) => {
   const numOfChan = buffer.numberOfChannels;
   const length = buffer.length * numOfChan * 2 + 44;
   const bufferArray = new ArrayBuffer(length);
   const view = new DataView(bufferArray);
-
-  // WAV header
   const sampleRate = buffer.sampleRate;
   const bitsPerSample = 16;
   let offset = 0;
@@ -75,7 +67,7 @@ const audioBufferToWav = (buffer) => {
   view.setUint32(offset, 16, true);
   offset += 4;
   view.setUint16(offset, 1, true);
-  offset += 2; // PCM format
+  offset += 2;
   view.setUint16(offset, numOfChan, true);
   offset += 2;
   view.setUint32(offset, sampleRate, true);
@@ -91,7 +83,6 @@ const audioBufferToWav = (buffer) => {
   view.setUint32(offset, length - offset - 4, true);
   offset += 4;
 
-  // Write PCM audio data
   for (let i = 0; i < buffer.length; i++) {
     for (let channel = 0; channel < numOfChan; channel++) {
       const sample = buffer.getChannelData(channel)[i];
@@ -100,7 +91,6 @@ const audioBufferToWav = (buffer) => {
       offset += 2;
     }
   }
-
   return bufferArray;
 };
 
@@ -137,7 +127,8 @@ const Chat = () => {
   const [recordingStartTime, setRecordingStartTime] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [language, setLanguage] = useState("en-US"); // Language state (English or Malayalam)
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [language, setLanguage] = useState("en-US");
 
   const chatBoxRef = useRef(null);
   const recognitionRef = useRef(null);
@@ -145,6 +136,7 @@ const Chat = () => {
   const audioChunksRef = useRef([]);
   const speechRef = useRef(null);
   const recordingTimerRef = useRef(null);
+  const webcamRef = useRef(null);
   const navigate = useNavigate();
   const { sessionId, isLoading: sessionLoading, startSession, endSession } = SessionManager();
   const [chatRef, chatInView] = useInView({ triggerOnce: true, threshold: 0.2 });
@@ -156,13 +148,11 @@ const Chat = () => {
     return "Good evening";
   };
 
-  // Format timestamp for individual messages
   const formatTimestamp = (timestamp) => {
     const messageDate = new Date(timestamp);
     return messageDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
-  // Format date label for group headers
   const formatDateLabel = (timestamp) => {
     const messageDate = new Date(timestamp);
     const today = new Date();
@@ -187,7 +177,6 @@ const Chat = () => {
     });
   };
 
-  // Group messages by date
   const groupMessagesByDate = () => {
     const grouped = [];
     let currentDate = null;
@@ -298,7 +287,7 @@ const Chat = () => {
       recognitionRef.current = new webkitSpeechRecognition();
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = language; // Set language dynamically
+      recognitionRef.current.lang = language;
 
       recognitionRef.current.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
@@ -462,28 +451,25 @@ const Chat = () => {
   };
 
   const adjustTTSForEmotion = (speech, moodLabel) => {
-    switch (moodLabel) {
-      case "Sad 😔":
+    const emotion = moodLabel.split(" ")[0]; // Extract emotion name
+    switch (emotion) {
+      case "Sad":
         speech.rate = 0.8;
         speech.pitch = 0.9;
         break;
-      case "Angry 😡":
+      case "Angry":
         speech.rate = 0.9;
         speech.pitch = 1.0;
         break;
-      case "Happy 😊":
+      case "Happy":
         speech.rate = 1.1;
         speech.pitch = 1.2;
         break;
-      case "Tired 😴":
-        speech.rate = 0.8;
-        speech.pitch = 0.9;
+      case "Surprise":
+        speech.rate = 1.0;
+        speech.pitch = 1.3;
         break;
-      case "Stressed 😟":
-        speech.rate = 0.85;
-        speech.pitch = 0.95;
-        break;
-      case "Neutral 🙂":
+      case "Neutral":
       default:
         speech.rate = 1.0;
         speech.pitch = 1.0;
@@ -507,13 +493,10 @@ const Chat = () => {
       } else {
         window.speechSynthesis.cancel();
         const speech = new SpeechSynthesisUtterance(text);
-        speech.lang = language; // Set language dynamically
-
-        // Select a voice that supports the chosen language
+        speech.lang = language;
         const voices = window.speechSynthesis.getVoices();
         const voice = voices.find((v) => v.lang === language) || voices[0];
         speech.voice = voice;
-
         adjustTTSForEmotion(speech, moodLabel);
         speech.onend = () => {
           setCurrentTTSMessageIndex(null);
@@ -527,8 +510,8 @@ const Chat = () => {
     }
   };
 
-  const sendMessage = async (text, audioBlob = null, imageSrc = null) => {
-    if (!text && !audioBlob && !imageSrc) return;
+  const sendMessage = async (text, audioBlob = null, imageSrc = null, imageBlob = null) => {
+    if (!text && !audioBlob && !imageSrc && !imageBlob) return;
 
     let userMessage;
     if (audioBlob) {
@@ -540,9 +523,18 @@ const Chat = () => {
         isAudio: true,
         timestamp: new Date().toISOString(),
       };
+    } else if (imageSrc) {
+      userMessage = {
+        text: "Image sent 📷",
+        sender: "user",
+        audioBlob,
+        imageSrc,
+        isImage: true,
+        timestamp: new Date().toISOString(),
+      };
     } else {
       userMessage = {
-        text: imageSrc ? "Image sent 📷" : text,
+        text,
         sender: "user",
         audioBlob,
         imageSrc,
@@ -566,7 +558,7 @@ const Chat = () => {
       return newMessages;
     });
     setInput("");
-    setIsTyping(true);
+    setIsTyping(false);
     setIsLoading(true);
 
     try {
@@ -580,7 +572,7 @@ const Chat = () => {
         const formData = new FormData();
         formData.append("session_id", sessionId);
         formData.append("audio", audioBlob, "recording.wav");
-        formData.append("language", language); // Send language to backend
+        formData.append("language", language);
         formData.append("conversation_history", JSON.stringify([]));
 
         const response = await axios.post("http://localhost:5000/analyze", formData, {
@@ -618,12 +610,32 @@ const Chat = () => {
 
         const selfHelp = response.data.data.self_help;
         if (selfHelp?.length > 0 && selfHelp[0].title !== "No resources available at the moment.") {
-          botResponseText += `\n\nWould you like to explore self-help resources for ${moodLabel}? Click the 'Self-Help' button above!`;
         }
 
         localStorage.setItem("latestMood", moodLabel);
         localStorage.setItem("selfHelpResource", JSON.stringify(selfHelp));
-      } else if (text && !imageSrc) {
+      } else if (imageBlob) {
+        const formData = new FormData();
+        formData.append("image", imageBlob, "captured_image.jpeg");
+        formData.append("session_id", sessionId);
+        formData.append("language", language);
+
+        const response = await axios.post("http://localhost:5000/analyze_image", formData, {
+          headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "multipart/form-data" },
+        });
+
+        if (response.data.status === "success") {
+          botResponseText = response.data.data.response;
+          moodLabel = response.data.data.mood_label;
+          const selfHelp = response.data.data.self_help || [];
+          if (selfHelp?.length > 0 && selfHelp[0].title !== "No resources available at the moment.") {
+          }
+          localStorage.setItem("latestMood", moodLabel);
+          localStorage.setItem("selfHelpResource", JSON.stringify(selfHelp));
+        } else {
+          throw new Error(response.data.message || "Failed to analyze image");
+        }
+      } else {
         let recentMessages = [];
         const historyResponse = await axios.get(`http://localhost:5000/get_chats/${sessionId}`, {
           headers: { Authorization: `Bearer ${accessToken}` },
@@ -650,17 +662,12 @@ const Chat = () => {
         botResponseText = response.data.data.response;
         moodLabel = response.data.data.mood_label;
 
-       const selfHelp = response.data.data.self_help;
-        //if (selfHelp?.length > 0 && selfHelp[0].title !== "No resources available at the moment.") {
-         // botResponseText += `\n\nWould you like to explore self-help resources for ${moodLabel}? Click the 'Self-Help' button above!`;
-       // }
+        const selfHelp = response.data.data.self_help;
+        if (selfHelp?.length > 0 && selfHelp[0].title !== "No resources available at the moment.") {
+        }
 
         localStorage.setItem("latestMood", moodLabel);
         localStorage.setItem("selfHelpResource", JSON.stringify(selfHelp));
-      } else {
-        botResponseText = imageSrc
-          ? "Thank you for sharing the image. I’m here for you—would you like to talk more about what this means to you?"
-          : "I’m here to listen. Would you like to share more?";
       }
 
       const botResponse = { text: botResponseText, sender: "bot", moodLabel, timestamp: new Date().toISOString() };
@@ -681,10 +688,10 @@ const Chat = () => {
         speak(botResponseText, newMessageIndex, moodLabel);
         return newMessages;
       });
-      setIsTyping(false);
     } catch (error) {
-      console.error("Error sending message to /analyze:", error);
+      console.error("Error sending message:", error);
       const errorMessage =
+        error.response?.data?.message ||
         "I’m sorry, something went wrong while communicating with the server. I’m still here for you—let’s try again. What’s on your mind?";
       const botResponse = {
         text: errorMessage,
@@ -709,9 +716,9 @@ const Chat = () => {
         speak(errorMessage, newMessageIndex, "Neutral 🙂");
         return newMessages;
       });
-      setIsTyping(false);
     } finally {
       setIsLoading(false);
+      setIsCameraOpen(false); // Close camera after sending
     }
   };
 
@@ -770,9 +777,42 @@ const Chat = () => {
 
   const handleLanguageChange = (e) => {
     setLanguage(e.target.value);
-    window.speechSynthesis.cancel(); // Reset speech synthesis
+    window.speechSynthesis.cancel();
     setCurrentTTSMessageIndex(null);
     setIsTTSPaused(false);
+  };
+
+  const captureImage = async () => {
+    try {
+      const imageSrc = webcamRef.current.getScreenshot();
+      if (!imageSrc) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            text: "Failed to capture image. Please try again.",
+            sender: "bot",
+            moodLabel: "Neutral 🙂",
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+        return;
+      }
+
+      const response = await fetch(imageSrc);
+      const blob = await response.blob();
+      sendMessage(null, null, imageSrc, blob);
+    } catch (error) {
+      console.error("Error capturing image:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          text: "Error capturing image. Please ensure camera permissions are enabled.",
+          sender: "bot",
+          moodLabel: "Neutral 🙂",
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+    }
   };
 
   return (
@@ -798,14 +838,14 @@ const Chat = () => {
               <FaUser className="nav-icon" />
               {isSidebarOpen && <span>Profile</span>}
             </button>
-         <button
-         onClick={() => navigate("/mood-history")}
-         className="nav-link mood-history-btn"
-         aria-label="Mood History"
-        >
-        <BiLineChart className="nav-icon" />  {/* <-- replaced icon here */}
-        {isSidebarOpen && <span>Mood History</span>}
-        </button>
+            <button
+              onClick={() => navigate("/mood-history")}
+              className="nav-link mood-history-btn"
+              aria-label="Mood History"
+            >
+              <BiLineChart className="nav-icon" />
+              {isSidebarOpen && <span>Mood History</span>}
+            </button>
             <button
               onClick={() => navigate("/chat-history")}
               className="nav-link chat-history-btn"
@@ -814,24 +854,22 @@ const Chat = () => {
               <FaHistory className="nav-icon" />
               {isSidebarOpen && <span>Chat History</span>}
             </button>
-             <button
-             onClick={() => navigate("/quizzes")}
-             className="nav-link quizzes-btn"
-             aria-label="Go to quizzes"
-             >
-            <FaQuestionCircle className="nav-icon" />
-            {isSidebarOpen && <span>Quiz</span>}
+            <button
+              onClick={() => navigate("/quizzes")}
+              className="nav-link quizzes-btn"
+              aria-label="Go to quizzes"
+            >
+              <FaQuestionCircle className="nav-icon" />
+              {isSidebarOpen && <span>Quiz</span>}
             </button>
-
-             <button
-              onClick={() => navigate("/mini-games")} // Added Mini-Games button
+            <button
+              onClick={() => navigate("/mini-games")}
               className="nav-link mini-games-btn"
               aria-label="Play Mini-Games"
             >
               <FaGamepad className="nav-icon" />
               {isSidebarOpen && <span>Mini-Games</span>}
             </button>
-            
             <button
               onClick={handleNavigateToSelfHelp}
               className="nav-link self-help-btn"
@@ -933,6 +971,34 @@ const Chat = () => {
             {isTyping && <div className="typing-indicator">Typing...</div>}
           </div>
           <div className="input-area">
+            {isCameraOpen && (
+              <div className="webcam-container mb-4">
+                <Webcam
+                  audio={false}
+                  ref={webcamRef}
+                  screenshotFormat="image/jpeg"
+                  width={320}
+                  height={240}
+                  className="rounded-lg shadow-lg"
+                />
+                <div className="flex space-x-2 mt-2">
+                  <button
+                    onClick={captureImage}
+                    className="input-action-btn bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded"
+                    aria-label="Capture image"
+                  >
+                    Capture
+                  </button>
+                  <button
+                    onClick={() => setIsCameraOpen(false)}
+                    className="input-action-btn bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded"
+                    aria-label="Close camera"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="message-input-wrapper">
               <button onClick={handleClearChat} className="custom-clear-btn" aria-label="Clear chat">
                 <FaTrash />
@@ -947,10 +1013,10 @@ const Chat = () => {
                   onKeyDown={(e) => e.key === "Enter" && sendMessage(input)}
                   aria-label="Message input"
                 />
-                {!isTyping && (
+                {!isTyping && !isCameraOpen && (
                   <>
                     <button
-                      onClick={() => alert("Open Camera")}
+                      onClick={() => setIsCameraOpen(true)}
                       className="input-action-btn camera-btn"
                       aria-label="Open camera"
                     >

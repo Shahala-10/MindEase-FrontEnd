@@ -19,8 +19,8 @@ import EmergencyContacts from "./components/EmergencyContacts";
 import ChatHistory from "./components/ChatHistory";
 import QuizSection from "./components/QuizSection";
 import MiniGames from "./components/MiniGames";
-import MemoryMatchGame from "./components/MemoryMatchGame"; // Import Memory Match
-import ColorMatchGame from "./components/ColorMatchGame"; // Import Color Match
+import MemoryMatchGame from "./components/MemoryMatchGame";
+import ColorMatchGame from "./components/ColorMatchGame";
 import WordScrambleGame from "./components/WordScrambleGame";
 import MoodPuzzleGame from "./components/MoodPuzzleGame";
 import HappyMomentsGame from "./components/HappyMomentsGame";
@@ -41,11 +41,12 @@ const AppContent = () => {
     "/chat-history",
     "/quizzes",
     "/mini-games",
-    "/memory-match-game", // Add Memory Match route
-    "/color-match-game", // Add Color Match route
+    "/memory-match-game",
+    "/color-match-game",
     "/word-scramble-game",
     "/mood-puzzle-game",
     "/happy-moments-game",
+    "/analyze-image", // Add new route to hide Navbar and Footer
   ];
 
   const hideNavbarFooter = hideNavbarFooterPaths.includes(location.pathname);
@@ -77,8 +78,8 @@ const AppContent = () => {
             <Route path="/chat-history" element={<ChatHistory />} />
             <Route path="/quizzes" element={<QuizSection />} />
             <Route path="/mini-games" element={<MiniGames />} />
-            <Route path="/memory-match-game" element={<MemoryMatchGame />} /> {/* Add Memory Match route */}
-            <Route path="/color-match-game" element={<ColorMatchGame />} /> {/* Add Color Match route */}
+            <Route path="/memory-match-game" element={<MemoryMatchGame />} />
+            <Route path="/color-match-game" element={<ColorMatchGame />} />
             <Route path="/word-scramble-game" element={<WordScrambleGame />} />
             <Route path="/mood-puzzle-game" element={<MoodPuzzleGame />} />
             <Route path="/happy-moments-game" element={<HappyMomentsGame />} />

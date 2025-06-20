@@ -609,3 +609,10 @@ div.chat-container {
     margin-left: 42px;
   }
 }
+.webcam-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
