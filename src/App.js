@@ -1,5 +1,11 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
+
 import Home from "./components/Home";
 import Chat from "./chat";
 import Login from "./components/Login";
@@ -28,7 +34,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 const AppContent = () => {
   const location = useLocation();
-  console.log("Current location:", location.pathname);
+  console.log("📍 Current location:", location.pathname);
 
   const hideNavbarFooterPaths = [
     "/signup",
@@ -46,7 +52,7 @@ const AppContent = () => {
     "/word-scramble-game",
     "/mood-puzzle-game",
     "/happy-moments-game",
-    "/analyze-image", // Add new route to hide Navbar and Footer
+    "/analyze-image",
   ];
 
   const hideNavbarFooter = hideNavbarFooterPaths.includes(location.pathname);
@@ -69,7 +75,7 @@ const AppContent = () => {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/emergency-contacts" element={<EmergencyContacts />} />
 
-          {/* Protected Routes - Require authentication and at least 2 emergency contacts */}
+          {/* Protected Routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/chat" element={<Chat />} />
             <Route path="/profile" element={<Profile />} />
