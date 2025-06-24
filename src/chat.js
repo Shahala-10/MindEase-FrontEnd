@@ -112,6 +112,7 @@ const Chat = () => {
       ? JSON.parse(savedMessages).map((msg) => ({
           ...msg,
           audioBlob: null,
+          audio_file_path: msg.audio_file_path || null,
           timestamp: msg.timestamp || new Date().toISOString(),
         }))
       : [];
@@ -129,6 +130,8 @@ const Chat = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [language, setLanguage] = useState("en-US");
+  // New state to cache fetched audio blobs
+  const [audioBlobs, setAudioBlobs] = useState({});
 
   const chatBoxRef = useRef(null);
   const recognitionRef = useRef(null);
@@ -140,6 +143,38 @@ const Chat = () => {
   const navigate = useNavigate();
   const { sessionId, isLoading: sessionLoading, startSession, endSession } = SessionManager();
   const [chatRef, chatInView] = useInView({ triggerOnce: true, threshold: 0.2 });
+
+  // Function to fetch audio from server
+  const fetchAudio = async (chatId) => {
+    try {
+      const accessToken = localStorage.getItem("token");
+      const response = await axios.get(`http://localhost:5000/audio/${chatId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        responseType: "blob",
+      });
+      const blob = new Blob([response.data], { type: "audio/wav" });
+      const blobUrl = URL.createObjectURL(blob);
+      setAudioBlobs((prev) => ({ ...prev, [chatId]: blobUrl }));
+      return blobUrl;
+    } catch (error) {
+      console.error(`Error fetching audio for chat ${chatId}:`, error);
+      return null;
+    }
+  };
+
+  // Fetch audio when messages change
+  useEffect(() => {
+    messages.forEach((msg) => {
+      if (msg.audio_file_path && msg.chat_id && !audioBlobs[msg.chat_id]) {
+        fetchAudio(msg.chat_id);
+      }
+    });
+
+    // Cleanup blob URLs on unmount
+    return () => {
+      Object.values(audioBlobs).forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [messages, audioBlobs]);
 
   const getTimeBasedGreeting = () => {
     const hour = new Date().getHours();
@@ -194,6 +229,25 @@ const Chat = () => {
   };
 
   useEffect(() => {
+    let interval;
+
+    if (isRecording) {
+      const start = Math.floor(Date.now() / 1000);
+      setRecordingStartTime(start);
+
+      interval = setInterval(() => {
+        const now = Math.floor(Date.now() / 1000);
+        setRecordingTime(now - start);
+      }, 1000);
+    } else {
+      clearInterval(interval);
+      setRecordingTime(0);
+    }
+
+    return () => clearInterval(interval);
+  }, [isRecording]);
+
+  useEffect(() => {
     const fetchUserAndChatHistory = async () => {
       setIsLoading(true);
       try {
@@ -207,21 +261,36 @@ const Chat = () => {
         const timeGreeting = getTimeBasedGreeting();
         setTimeGreetingWithName(`${timeGreeting}${fullName ? `, ${fullName}` : ""}.`);
 
-        if (accessToken && sessionId) {
-          const chatResponse = await axios.get(`http://localhost:5000/get_chats/${sessionId}`, {
+        if (accessToken) {
+          const chatResponse = await axios.get("http://localhost:5000/get_all_chats", {
             headers: { Authorization: `Bearer ${accessToken}` },
           });
           if (chatResponse.data.data.chats?.length > 0) {
             const backendMessages = chatResponse.data.data.chats
               .map((chat) => [
-                { text: chat.message, sender: "user", timestamp: new Date().toISOString() },
-                { text: chat.response || "", sender: "bot", timestamp: new Date().toISOString() },
+                {
+                  text: chat.message,
+                  sender: "user",
+                  timestamp: chat.timestamp,
+                  audio_file_path: chat.audio_file_path,
+                  chat_id: chat.chat_id,
+                  isAudio: !!chat.audio_file_path,
+                },
+                {
+                  text: chat.response || "",
+                  sender: "bot",
+                  timestamp: chat.timestamp,
+                  audio_file_path: null,
+                  chat_id: chat.chat_id,
+                },
               ])
               .flat();
             setMessages((prev) => {
               const mergedMessages = [
                 ...prev,
-                ...backendMessages.filter((bm) => !prev.some((pm) => pm.text === bm.text)),
+                ...backendMessages.filter(
+                  (bm) => !prev.some((pm) => pm.text === bm.text && pm.timestamp === bm.timestamp)
+                ),
               ];
               localStorage.setItem(
                 "chatMessages",
@@ -231,6 +300,8 @@ const Chat = () => {
                     sender: msg.sender,
                     imageSrc: msg.imageSrc,
                     timestamp: msg.timestamp,
+                    audio_file_path: msg.audio_file_path,
+                    chat_id: msg.chat_id,
                   }))
                 )
               );
@@ -261,24 +332,7 @@ const Chat = () => {
 
   useEffect(() => {
     if (chatBoxRef.current) {
-      chatBoxRef.current.scrollTop = 0;
-    }
-  }, []);
-
-  useEffect(() => {
-    if (chatBoxRef.current && messages.length > 0) {
       chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
-      localStorage.setItem(
-        "chatMessages",
-        JSON.stringify(
-          messages.map((msg) => ({
-            text: msg.text,
-            sender: msg.sender,
-            imageSrc: msg.imageSrc,
-            timestamp: msg.timestamp,
-          }))
-        )
-      );
     }
   }, [messages]);
 
@@ -301,7 +355,7 @@ const Chat = () => {
           {
             text: "Error in speech recognition. Please try again.",
             sender: "bot",
-            moodLabel: "Neutral 🙂",
+            moodLabel: "Neutral 😊",
             timestamp: new Date().toISOString(),
           },
         ]);
@@ -337,7 +391,7 @@ const Chat = () => {
             {
               text: "Recording too short. Please record for at least 1 second.",
               sender: "bot",
-              moodLabel: "Neutral 🙂",
+              moodLabel: "Neutral 😊",
               timestamp: new Date().toISOString(),
             },
           ]);
@@ -351,7 +405,7 @@ const Chat = () => {
             {
               text: "No audio detected. Please ensure your microphone is working and speak clearly.",
               sender: "bot",
-              moodLabel: "Neutral 🙂",
+              moodLabel: "Neutral 😊",
               timestamp: new Date().toISOString(),
             },
           ]);
@@ -366,7 +420,7 @@ const Chat = () => {
             {
               text: "The recorded audio is too small to process. Please record a longer message (at least 1 second).",
               sender: "bot",
-              moodLabel: "Neutral 🙂",
+              moodLabel: "Neutral 😊",
               timestamp: new Date().toISOString(),
             },
           ]);
@@ -384,7 +438,7 @@ const Chat = () => {
             {
               text: "Failed to process the recorded audio format. Please try recording again or type your message instead.",
               sender: "bot",
-              moodLabel: "Neutral 🙂",
+              moodLabel: "Neutral 😊",
               timestamp: new Date().toISOString(),
             },
           ]);
@@ -401,7 +455,7 @@ const Chat = () => {
               {
                 text: "The recorded audio duration is too short. Please record for at least 1 second and speak clearly.",
                 sender: "bot",
-                moodLabel: "Neutral 🙂",
+                moodLabel: "Neutral 😊",
                 timestamp: new Date().toISOString(),
               },
             ]);
@@ -421,7 +475,7 @@ const Chat = () => {
               {
                 text: "The recorded audio appears to be silent or corrupted. Please ensure your microphone is working and speak clearly.",
                 sender: "bot",
-                moodLabel: "Neutral 🙂",
+                moodLabel: "Neutral 😊",
                 timestamp: new Date().toISOString(),
               },
             ]);
@@ -451,7 +505,7 @@ const Chat = () => {
   };
 
   const adjustTTSForEmotion = (speech, moodLabel) => {
-    const emotion = moodLabel.split(" ")[0]; // Extract emotion name
+    const emotion = moodLabel.split(" ")[0];
     switch (emotion) {
       case "Sad":
         speech.rate = 0.8;
@@ -476,7 +530,7 @@ const Chat = () => {
     }
   };
 
-  const speak = (text, messageIndex, moodLabel = "Neutral 🙂") => {
+  const speak = (text, messageIndex, moodLabel = "Neutral 😊") => {
     if ("speechSynthesis" in window) {
       if (currentTTSMessageIndex !== null && currentTTSMessageIndex !== messageIndex) {
         window.speechSynthesis.cancel();
@@ -516,16 +570,17 @@ const Chat = () => {
     let userMessage;
     if (audioBlob) {
       userMessage = {
-        text: "Voice message sent 🎙️",
+        
         sender: "user",
         audioBlob,
         imageSrc,
         isAudio: true,
         timestamp: new Date().toISOString(),
+        chat_id: null,
       };
     } else if (imageSrc) {
       userMessage = {
-        text: "Image sent 📷",
+        text,
         sender: "user",
         audioBlob,
         imageSrc,
@@ -552,6 +607,8 @@ const Chat = () => {
             sender: msg.sender,
             imageSrc: msg.imageSrc,
             timestamp: msg.timestamp,
+            audio_file_path: msg.audio_file_path,
+            chat_id: msg.chat_id,
           }))
         )
       );
@@ -566,8 +623,7 @@ const Chat = () => {
       if (!sessionId) throw new Error("No active session. Please try again.");
 
       let botResponseText = "";
-      let moodLabel = "Neutral 🙂";
-
+      let moodLabel = "Neutral 😊";
       if (audioBlob) {
         const formData = new FormData();
         formData.append("session_id", sessionId);
@@ -579,17 +635,15 @@ const Chat = () => {
           headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "multipart/form-data" },
         });
 
-        const transcribedText = response.data.data.message;
+        const chatId = response.data.data.chat_id;
+        const transcribedText = response.data.data.transcribed_text; // Still fetch for bot response, but don't display
         setMessages((prev) => {
           const updatedMessages = [...prev];
           const lastMessageIndex = updatedMessages.length - 1;
           if (updatedMessages[lastMessageIndex].isAudio) {
-            updatedMessages[lastMessageIndex].transcribedText = transcribedText;
-            if (transcribedText.includes("[Transcription") || transcribedText.includes("[Voice input")) {
-              updatedMessages[lastMessageIndex].text = "Voice message (transcription failed)";
-            } else {
-              updatedMessages[lastMessageIndex].text = `Voice message: ${transcribedText}`;
-            }
+            updatedMessages[lastMessageIndex].transcribedText = transcribedText; // Keep internally if needed
+            updatedMessages[lastMessageIndex].chat_id = chatId;
+            // Do not update text with transcribedText, keep as "Voice message sent 🎙️"
           }
           localStorage.setItem(
             "chatMessages",
@@ -599,6 +653,8 @@ const Chat = () => {
                 sender: msg.sender,
                 imageSrc: msg.imageSrc,
                 timestamp: msg.timestamp,
+                audio_file_path: msg.audio_file_path,
+                chat_id: msg.chat_id,
               }))
             )
           );
@@ -610,10 +666,10 @@ const Chat = () => {
 
         const selfHelp = response.data.data.self_help;
         if (selfHelp?.length > 0 && selfHelp[0].title !== "No resources available at the moment.") {
+          localStorage.setItem("selfHelpResource", JSON.stringify(selfHelp));
         }
 
         localStorage.setItem("latestMood", moodLabel);
-        localStorage.setItem("selfHelpResource", JSON.stringify(selfHelp));
       } else if (imageBlob) {
         const formData = new FormData();
         formData.append("image", imageBlob, "captured_image.jpeg");
@@ -629,15 +685,15 @@ const Chat = () => {
           moodLabel = response.data.data.mood_label;
           const selfHelp = response.data.data.self_help || [];
           if (selfHelp?.length > 0 && selfHelp[0].title !== "No resources available at the moment.") {
+            localStorage.setItem("selfHelpResource", JSON.stringify(selfHelp));
           }
           localStorage.setItem("latestMood", moodLabel);
-          localStorage.setItem("selfHelpResource", JSON.stringify(selfHelp));
         } else {
-          throw new Error(response.data.message || "Failed to analyze image");
+          throw new Error(response.data.message || "Failed to analyze image.");
         }
       } else {
         let recentMessages = [];
-        const historyResponse = await axios.get(`http://localhost:5000/get_chats/${sessionId}`, {
+        const historyResponse = await axios.get(`http://localhost:5000/get_all_chats`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
         recentMessages = [
@@ -664,10 +720,10 @@ const Chat = () => {
 
         const selfHelp = response.data.data.self_help;
         if (selfHelp?.length > 0 && selfHelp[0].title !== "No resources available at the moment.") {
+          localStorage.setItem("selfHelpResource", JSON.stringify(selfHelp));
         }
 
         localStorage.setItem("latestMood", moodLabel);
-        localStorage.setItem("selfHelpResource", JSON.stringify(selfHelp));
       }
 
       const botResponse = { text: botResponseText, sender: "bot", moodLabel, timestamp: new Date().toISOString() };
@@ -681,11 +737,11 @@ const Chat = () => {
               sender: msg.sender,
               imageSrc: msg.imageSrc,
               timestamp: msg.timestamp,
+              audio_file_path: msg.audio_file_path,
+              chat_id: msg.chat_id,
             }))
           )
         );
-        const newMessageIndex = newMessages.length - 1;
-        speak(botResponseText, newMessageIndex, moodLabel);
         return newMessages;
       });
     } catch (error) {
@@ -696,7 +752,7 @@ const Chat = () => {
       const botResponse = {
         text: errorMessage,
         sender: "bot",
-        moodLabel: "Neutral 🙂",
+        moodLabel: "Neutral 😊",
         timestamp: new Date().toISOString(),
       };
       setMessages((prev) => {
@@ -709,16 +765,16 @@ const Chat = () => {
               sender: msg.sender,
               imageSrc: msg.imageSrc,
               timestamp: msg.timestamp,
+              audio_file_path: msg.audio_file_path,
+              chat_id: msg.chat_id,
             }))
           )
         );
-        const newMessageIndex = newMessages.length - 1;
-        speak(errorMessage, newMessageIndex, "Neutral 🙂");
         return newMessages;
       });
     } finally {
       setIsLoading(false);
-      setIsCameraOpen(false); // Close camera after sending
+      setIsCameraOpen(false);
     }
   };
 
@@ -749,7 +805,7 @@ const Chat = () => {
   };
 
   const handleNavigateToSelfHelp = () => {
-    const latestMood = localStorage.getItem("latestMood") || "Neutral 🙂";
+    const latestMood = localStorage.getItem("latestMood") || "Neutral 😊";
     const selfHelpResource = JSON.parse(localStorage.getItem("selfHelpResource")) || [];
     navigate("/self-help", { state: { latestMood, selfHelpResource } });
   };
@@ -766,13 +822,19 @@ const Chat = () => {
   };
 
   const toggleSidebar = () => {
-    setIsSidebarOpen((prev) => !prev);
+    setIsSidebarOpen(!isSidebarOpen);
   };
 
   const formatRecordingTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+
+    const paddedHrs = hrs > 0 ? String(hrs).padStart(2, "0") + ":" : "";
+    const paddedMins = String(mins).padStart(2, "0");
+    const paddedSecs = String(secs).padStart(2, "0");
+
+    return `${paddedHrs}${paddedMins}:${paddedSecs}`;
   };
 
   const handleLanguageChange = (e) => {
@@ -791,7 +853,7 @@ const Chat = () => {
           {
             text: "Failed to capture image. Please try again.",
             sender: "bot",
-            moodLabel: "Neutral 🙂",
+            moodLabel: "Neutral 😊",
             timestamp: new Date().toISOString(),
           },
         ]);
@@ -808,7 +870,7 @@ const Chat = () => {
         {
           text: "Error capturing image. Please ensure camera permissions are enabled.",
           sender: "bot",
-          moodLabel: "Neutral 🙂",
+          moodLabel: "Neutral 😊",
           timestamp: new Date().toISOString(),
         },
       ]);
@@ -841,7 +903,7 @@ const Chat = () => {
             <button
               onClick={() => navigate("/mood-history")}
               className="nav-link mood-history-btn"
-              aria-label="Mood History"
+              aria-label="View Mood History"
             >
               <BiLineChart className="nav-icon" />
               {isSidebarOpen && <span>Mood History</span>}
@@ -849,7 +911,7 @@ const Chat = () => {
             <button
               onClick={() => navigate("/chat-history")}
               className="nav-link chat-history-btn"
-              aria-label="Chat History"
+              aria-label="View Chat History"
             >
               <FaHistory className="nav-icon" />
               {isSidebarOpen && <span>Chat History</span>}
@@ -857,10 +919,10 @@ const Chat = () => {
             <button
               onClick={() => navigate("/quizzes")}
               className="nav-link quizzes-btn"
-              aria-label="Go to quizzes"
+              aria-label="Take Quizzes"
             >
               <FaQuestionCircle className="nav-icon" />
-              {isSidebarOpen && <span>Quiz</span>}
+              {isSidebarOpen && <span>Quizzes</span>}
             </button>
             <button
               onClick={() => navigate("/mini-games")}
@@ -874,7 +936,7 @@ const Chat = () => {
               onClick={handleNavigateToSelfHelp}
               className="nav-link self-help-btn"
               disabled={!localStorage.getItem("latestMood")}
-              aria-label="Self-Help Resources"
+              aria-label="View Self-Help Resources"
             >
               <FaBook className="nav-icon" />
               {isSidebarOpen && <span>Self-Help</span>}
@@ -899,7 +961,7 @@ const Chat = () => {
           className="chat-card"
         >
           <h4 className="chat-greeting">{timeGreetingWithName}</h4>
-          <p className="chat-help-text">How can I help you today?</p>
+          <p className="chat-help-text">How can I assist you today?</p>
           <div className="language-selector">
             <label htmlFor="language-select">Select Language:</label>
             <select id="language-select" value={language} onChange={handleLanguageChange}>
@@ -907,69 +969,73 @@ const Chat = () => {
               <option value="ml-IN">Malayalam</option>
             </select>
           </div>
-          {isLoading && (
+          {isLoading ? (
             <div className="loading-spinner">
               <FaSpinner className="spinner-icon" />
             </div>
-          )}
-          <div className="chat-box" ref={chatBoxRef}>
-            {groupMessagesByDate().map((item) => {
-              if (item.type === "date") {
-                return (
-                  <div key={item.id} className="date-label">
-                    {formatDateLabel(item.date)}
-                  </div>
-                );
-              } else {
-                const msg = item.data;
-                const index = item.id;
-                return (
-                  <div
-                    key={index}
-                    className={`chat-message ${msg.sender}-message animate__animated ${
-                      msg.sender === "bot" ? "animate__fadeInLeft" : "animate__fadeInRight"
-                    }`}
-                  >
-                    <div className="message-wrapper">
-                      <div className={`avatar ${msg.sender}-avatar`}>{msg.sender === "user" ? "👤" : "🤖"}</div>
-                      <div className="message-content">
-                        <div className="message-text">{msg.text}</div>
-                        <span className="message-timestamp">{formatTimestamp(msg.timestamp)}</span>
-                        {msg.sender === "bot" && (
-                          <button
-                            onClick={() =>
-                              speak(msg.text, index, msg.moodLabel || localStorage.getItem("latestMood") || "Neutral 🙂")
-                            }
-                            className="speak-btn"
-                            title={currentTTSMessageIndex === index && !isTTSPaused ? "Pause" : "Play"}
-                            aria-label={
-                              currentTTSMessageIndex === index && !isTTSPaused ? "Pause speech" : "Play speech"
-                            }
-                          >
-                            {currentTTSMessageIndex === index && !isTTSPaused ? <FaPause /> : <FaVolumeUp />}
-                          </button>
-                        )}
-                      </div>
+          ) : (
+            <div className="chat-box" ref={chatBoxRef}>
+              {groupMessagesByDate().map((item) => {
+                if (item.type === "date") {
+                  return (
+                    <div key={item.id} className="date-label">
+                      {formatDateLabel(item.date)}
                     </div>
-                    {msg.audioBlob && typeof msg.audioBlob === "object" && msg.audioBlob instanceof Blob ? (
-                      <audio controls className="audio-player">
-                        <source src={URL.createObjectURL(msg.audioBlob)} type="audio/wav" />
-                        Your browser does not support the audio element.
-                      </audio>
-                    ) : msg.isAudio && msg.transcribedText ? (
-                      <p className="text-gray-500 italic">
-                        {msg.text.includes("transcription failed")
-                          ? "Audio message (transcription unavailable)"
-                          : `Transcribed: ${msg.transcribedText}`}
-                      </p>
-                    ) : null}
-                    {msg.imageSrc && <img src={msg.imageSrc} alt="Captured" className="chat-image" />}
-                  </div>
-                );
-              }
-            })}
-            {isTyping && <div className="typing-indicator">Typing...</div>}
-          </div>
+                  );
+                } else {
+                  const msg = item.data;
+                  const index = item.id;
+                  return (
+                    <div
+                      key={index}
+                      className={`chat-message ${msg.sender}-message animate__animated ${
+                        msg.sender === "bot" ? "animate__fadeInLeft" : "animate__fadeInRight"
+                      }`}
+                    >
+                      <div className="message-wrapper">
+                        <div className={`avatar ${msg.sender}-avatar`}>{msg.sender === "user" ? "👤" : "🤖"}</div>
+                        <div className="message-content">
+                          <div className="message-text">{msg.text}</div>
+                          <span className="message-timestamp">{formatTimestamp(msg.timestamp)}</span>
+                          {msg.sender === "bot" && (
+                            <button
+                              onClick={() =>
+                                speak(msg.text, index, msg.moodLabel || localStorage.getItem("latestMood") || "Neutral 😊")
+                              }
+                              className="speak-btn"
+                              title={currentTTSMessageIndex === index && !isTTSPaused ? "Pause" : "Play"}
+                              aria-label={
+                                currentTTSMessageIndex === index && !isTTSPaused ? "Pause speech" : "Play speech"
+                              }
+                            >
+                              {currentTTSMessageIndex === index && !isTTSPaused ? <FaPause /> : <FaVolumeUp />}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      {(msg.audioBlob || msg.audio_file_path) && (
+                        <audio controls className="audio-player">
+                          <source
+                            src={
+                              msg.audioBlob
+                                ? URL.createObjectURL(msg.audioBlob)
+                                : audioBlobs[msg.chat_id] || ""
+                            }
+                            type="audio/wav"
+                          />
+                          Your browser does not support the audio element.
+                        </audio>
+                      )}
+                      {/* Removed transcribed text display */}
+                      {msg.imageSrc && <img src={msg.imageSrc} alt="Captured" className="chat-image" />}
+                    </div>
+                  );
+                }
+              })}
+              {isTyping && <div className="typing-indicator">Typing...</div>}
+            </div>
+          )}
+
           <div className="input-area">
             {isCameraOpen && (
               <div className="webcam-container mb-4">
