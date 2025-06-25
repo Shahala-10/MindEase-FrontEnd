@@ -228,23 +228,24 @@ const Chat = () => {
     return grouped;
   };
 
+ const startRef = useRef(null);
+  const intervalRef = useRef(null);
+
   useEffect(() => {
-    let interval;
-
     if (isRecording) {
-      const start = Math.floor(Date.now() / 1000);
-      setRecordingStartTime(start);
+      // startRef.current = Math.floor(Date.now() / 1000);
 
-      interval = setInterval(() => {
-        const now = Math.floor(Date.now() / 1000);
-        setRecordingTime(now - start);
+      intervalRef.current = setInterval(() => {
+        // const now = Math.floor(Date.now() / 1000);
+        setRecordingTime(prev => prev + 1);
       }, 1000);
     } else {
-      clearInterval(interval);
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
       setRecordingTime(0);
     }
 
-    return () => clearInterval(interval);
+    return () => clearInterval(intervalRef.current);
   }, [isRecording]);
 
   useEffect(() => {
@@ -449,47 +450,34 @@ const Chat = () => {
         const audioUrl = URL.createObjectURL(wavBlob);
         const audio = new Audio(audioUrl);
         audio.onloadedmetadata = () => {
-          if (audio.duration < 1) {
-            setMessages((prev) => [
-              ...prev,
-              {
-                text: "The recorded audio duration is too short. Please record for at least 1 second and speak clearly.",
-                sender: "bot",
-                moodLabel: "Neutral 😊",
-                timestamp: new Date().toISOString(),
-              },
-            ]);
-            URL.revokeObjectURL(audioUrl);
-            audioChunksRef.current = [];
-            return;
-          }
+  if (audio.duration < 1) {
+    setMessages((prev) => [
+      ...prev,
+      {
+        text: "The recorded audio duration is too short. Please record for at least 1 second and speak clearly.",
+        sender: "bot",
+        moodLabel: "Neutral 😊",
+        timestamp: new Date().toISOString(),
+      },
+    ]);
+    URL.revokeObjectURL(audioUrl);
+    audioChunksRef.current = [];
+    return;
+  }
 
-          audio.play().then(() => {
-            audioChunksRef.current = [];
-            sendMessage(null, wavBlob);
-            URL.revokeObjectURL(audioUrl);
-          }).catch((error) => {
-            console.error("Playback test failed:", error);
-            setMessages((prev) => [
-              ...prev,
-              {
-                text: "The recorded audio appears to be silent or corrupted. Please ensure your microphone is working and speak clearly.",
-                sender: "bot",
-                moodLabel: "Neutral 😊",
-                timestamp: new Date().toISOString(),
-              },
-            ]);
-            URL.revokeObjectURL(audioUrl);
-            audioChunksRef.current = [];
-          });
-        };
+  // Don't play the audio, just proceed to send the message
+  sendMessage(null, wavBlob);
+  URL.revokeObjectURL(audioUrl);
+  audioChunksRef.current = [];
+};
+
       };
       mediaRecorderRef.current.start();
       setRecordingStartTime(Date.now());
       setIsRecording(true);
       recordingTimerRef.current = setInterval(() => {
         const duration = Math.floor((Date.now() - recordingStartTime) / 1000);
-        setRecordingTime(duration);
+        // setRecordingTime(duration);
       }, 1000);
     } catch (error) {
       console.error("Error starting recording:", error);
@@ -825,17 +813,30 @@ const Chat = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  const formatRecordingTime = (seconds) => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
+// const formatRecordingTime = (seconds) => {
+//   const hrs = Math.floor(seconds / 3600);
+//   const mins = Math.floor((seconds % 3600) / 60);
+//   const secs = seconds % 60;
 
-    const paddedHrs = hrs > 0 ? String(hrs).padStart(2, "0") + ":" : "";
-    const paddedMins = String(mins).padStart(2, "0");
-    const paddedSecs = String(secs).padStart(2, "0");
+//   const paddedHrs = hrs > 0 ? String(hrs).padStart(2, "0") + ":" : "";
+//   const paddedMins = String(mins).padStart(2, "0");
+//   const paddedSecs = String(secs).padStart(2, "0");
 
-    return `${paddedHrs}${paddedMins}:${paddedSecs}`;
-  };
+//   return `${paddedHrs}${paddedMins}:${paddedSecs}`;
+// };
+
+const formatRecordingTime = (seconds) => {
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+
+  const paddedHrs = hrs > 0 ? String(hrs).padStart(2, "0") + ":" : "";
+  const paddedMins = String(mins).padStart(2, "0");
+  const paddedSecs = String(secs).padStart(2, "0");
+
+  return `${paddedHrs}${paddedMins}:${paddedSecs}`;
+};
+
 
   const handleLanguageChange = (e) => {
     setLanguage(e.target.value);
@@ -1104,10 +1105,11 @@ const Chat = () => {
                 </button>
               )}
               {isRecording && (
-                <span className="recording-timer text-red-500">
-                  Recording: {formatRecordingTime(recordingTime)}
-                </span>
-              )}
+  <span className="recording-timer text-red-500">
+    Recording: {formatRecordingTime(recordingTime)}
+  </span>
+)}
+
             </div>
           </div>
         </motion.div>
